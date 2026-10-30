@@ -1,0 +1,208 @@
+{
+  "vehicles": [
+    {
+      "id": "azimut",
+      "cat": "boats",
+      "name": "Azimut 55 · Andaman Escape",
+      "location": "Phuket",
+      "place": "Royal Phuket Marina",
+      "price": 48000,
+      "unit": "charter",
+      "mode": "instant",
+      "capacity": 12,
+      "spec": "55 ft · 3 cabins · Professional crew",
+      "provider": "Blue Horizon Yachts",
+      "rating": 4.9,
+      "reviews": 28,
+      "img": "yacht",
+      "type": "Motor yacht",
+      "service": "Skipper & crew included",
+      "amenities": [
+        "Air conditioning",
+        "Snorkeling gear",
+        "Sun deck",
+        "Refreshments"
+      ],
+      "deposit": 10000
+    },
+    {
+      "id": "mercedes",
+      "cat": "cars",
+      "name": "Mercedes-Benz E-Class",
+      "location": "Phuket",
+      "place": "Phuket International Airport",
+      "price": 3200,
+      "unit": "day",
+      "mode": "instant",
+      "capacity": 4,
+      "spec": "Automatic · 2 bags · Hybrid",
+      "provider": "Siam Premium Cars",
+      "rating": 4.8,
+      "reviews": 56,
+      "img": "car",
+      "type": "Executive sedan",
+      "service": "Self-drive",
+      "amenities": [
+        "Air conditioning",
+        "Bluetooth",
+        "USB charging",
+        "Insurance"
+      ],
+      "deposit": 15000
+    },
+    {
+      "id": "vespa",
+      "cat": "motorcycles",
+      "name": "Vespa Primavera 150",
+      "location": "Phuket",
+      "place": "Old Town pickup point",
+      "price": 650,
+      "unit": "day",
+      "mode": "instant",
+      "capacity": 2,
+      "spec": "150 cc · Automatic · 2 helmets",
+      "provider": "Ride Phuket",
+      "rating": 4.9,
+      "reviews": 42,
+      "img": "bike",
+      "type": "Scooter",
+      "service": "Self-drive",
+      "amenities": [
+        "Helmets",
+        "Phone mount",
+        "Roadside support"
+      ],
+      "deposit": 3000
+    },
+    {
+      "id": "citation",
+      "cat": "jets",
+      "name": "Citation Latitude",
+      "location": "Bangkok",
+      "place": "Don Mueang Private Terminal",
+      "price": 180000,
+      "unit": "charter",
+      "mode": "instant",
+      "capacity": 8,
+      "spec": "8 seats · Cabin service · 4,900 km range",
+      "provider": "Siam Executive Aviation",
+      "rating": 4.9,
+      "reviews": 18,
+      "img": "jet",
+      "type": "Midsize jet",
+      "service": "Flight crew included",
+      "amenities": [
+        "Wi-Fi",
+        "Cabin service",
+        "Refreshments",
+        "Private terminal"
+      ],
+      "deposit": 0
+    },
+    {
+      "id": "andaman",
+      "cat": "boats",
+      "name": "Andaman Private Day Cruise",
+      "location": "Phuket",
+      "place": "Ao Po Grand Marina",
+      "price": 36000,
+      "unit": "trip",
+      "mode": "instant",
+      "capacity": 8,
+      "spec": "8 hours · 2 cabins · Crew included",
+      "provider": "Andaman Voyages",
+      "rating": 4.8,
+      "reviews": 34,
+      "img": "sea",
+      "type": "Motor yacht",
+      "service": "Skipper & crew included",
+      "amenities": [
+        "Snorkeling gear",
+        "Refreshments",
+        "Sun deck"
+      ],
+      "deposit": 5000
+    },
+    {
+      "id": "chauffeur",
+      "cat": "cars",
+      "name": "E-Class · Private Chauffeur",
+      "location": "Bangkok",
+      "place": "Hotel pickup in central Bangkok",
+      "price": 4800,
+      "unit": "day",
+      "mode": "instant",
+      "capacity": 3,
+      "spec": "8 hours · Chauffeur · 2 bags",
+      "provider": "Siam Premium Cars",
+      "rating": 4.9,
+      "reviews": 31,
+      "img": "car",
+      "type": "Executive sedan",
+      "service": "Chauffeur",
+      "amenities": [
+        "Air conditioning",
+        "Bluetooth",
+        "Refreshments"
+      ],
+      "deposit": 0
+    },
+    {
+      "id": "vespa-samui",
+      "cat": "motorcycles",
+      "name": "Vespa · Island Explorer",
+      "location": "Koh Samui",
+      "place": "Chaweng pickup point",
+      "price": 700,
+      "unit": "day",
+      "mode": "instant",
+      "capacity": 2,
+      "spec": "150 cc · Automatic · 2 helmets",
+      "provider": "Island Rides",
+      "rating": 4.8,
+      "reviews": 23,
+      "img": "bike",
+      "type": "Scooter",
+      "service": "Self-drive",
+      "amenities": [
+        "Helmets",
+        "Phone mount"
+      ],
+      "deposit": 3000
+    }
+  ],
+  "categories": [
+    {
+      "id": "boats",
+      "name": "Boats & Yachts",
+      "icon": "boat",
+      "img": "sea",
+      "tag": "A different kind of blue",
+      "desc": "Private charters & island escapes"
+    },
+    {
+      "id": "motorcycles",
+      "name": "Motorcycles",
+      "icon": "bike",
+      "img": "bike",
+      "tag": "Take the scenic route",
+      "desc": "Scooters & open-road adventures"
+    },
+    {
+      "id": "cars",
+      "name": "Cars",
+      "icon": "car",
+      "img": "car",
+      "tag": "The freedom to go",
+      "desc": "Self-drive & chauffeur services"
+    },
+    {
+      "id": "jets",
+      "name": "Private Jets",
+      "icon": "plane",
+      "img": "jet",
+      "tag": "Above the everyday",
+      "desc": "Private charters, on your schedule"
+    }
+  ]
+}

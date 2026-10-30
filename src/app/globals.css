@@ -1,0 +1,96 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-sans:
+    "Inter Variable", Thonburi, Tahoma, "Noto Sans Thai Variable", sans-serif;
+  --font-heading: var(--font-sans);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--foreground);
+  --color-popover: var(--card);
+  --color-popover-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: #ffffff;
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--foreground);
+  --color-muted: var(--secondary);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--secondary);
+  --color-accent-foreground: var(--foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--border);
+  --color-ring: var(--primary);
+  --color-navy: #081321;
+  --color-success: #20624a;
+  --color-warning: #855c16;
+  --color-rating: #f2b335;
+  --color-rating-foreground: #80520b;
+  --color-rating-soft: #fff4d6;
+  --color-ocean: #087e8b;
+  --color-ocean-soft: #e4f5f4;
+  --color-coral: #c74e6a;
+  --color-coral-soft: #fff0f3;
+  --color-lavender: #7653b4;
+  --color-lavender-soft: #f1ecfa;
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-xl: 14px;
+  --radius-2xl: 16px;
+}
+:root {
+  color-scheme: light;
+  --background: #f4f6f8;
+  --foreground: #172338;
+  --card: #ffffff;
+  --primary: #334b78;
+  --secondary: #e9edf3;
+  --muted-foreground: #626e80;
+  --destructive: #b33d3d;
+  --border: #d9dfe7;
+  --radius: 12px;
+}
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background font-sans text-foreground;
+  }
+  button:not(:disabled),
+  a,
+  [role="button"] {
+    cursor: pointer;
+  }
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+  a:focus-visible {
+    @apply rounded-sm outline-2 outline-offset-4 outline-ring;
+  }
+  ::selection {
+    @apply bg-primary/20;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* Override Latin tracking utilities so Thai vowels and tone marks stay clear. */
+:where(h1, h2, h3, h4, h5, h6):lang(th) {
+  letter-spacing: normal;
+}
