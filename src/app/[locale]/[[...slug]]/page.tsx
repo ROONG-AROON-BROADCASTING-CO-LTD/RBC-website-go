@@ -1,8 +1,16 @@
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { ScreenRouter } from "@/components/rbc/screen-router";
-import { validRoute, vehicleById, type Locale } from "@/lib/domain";
+import {
+  validRoute,
+  vehicleById,
+  type Category,
+  type Locale,
+} from "@/lib/domain";
 import { translate } from "@/lib/i18n";
+import { currentAccount } from "@/lib/server/auth";
+import { getDb } from "@/lib/server/db";
+import { listPublicListings } from "@/lib/server/public-listings";
 type Props = { params: Promise<{ locale: string; slug?: string[] }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale, slug = [] } = await params;
@@ -36,5 +44,36 @@ export default async function Page({ params }: Props) {
   if (slug[0] === "quote" || (slug[0] === "account" && slug[1] === "requests"))
     redirect(`/${locale}/account/bookings`);
   if (!validRoute(slug)) notFound();
-  return <ScreenRouter key={slug.join("/")} parts={slug} />;
+  if (["partner", "wizard", "operations"].includes(slug[0])) {
+    if (!process.env.DATABASE_URL) notFound();
+    const account = await currentAccount();
+    if (!account) redirect(`/${locale}/partner-login`);
+    const sql = getDb();
+    if (slug[0] === "operations") {
+      const [staff] = await sql<{ role: string }[]>`
+        select role from rbc_go.staff_members where account_id = ${account.id}
+      `;
+      if (!staff) notFound();
+      redirect(`/${locale}/operations/partners`);
+    } else {
+      const [member] = await sql<{ id: string }[]>`
+        select partners.id from rbc_go.partner_members members
+        join rbc_go.partners partners on partners.id = members.partner_id
+        where members.account_id = ${account.id} and partners.status = 'active'
+      `;
+      if (!member) redirect(`/${locale}/apply`);
+      redirect(`/${locale}/partner/overview`);
+    }
+  }
+  const publicListings =
+    slug[0] === "search" && process.env.DATABASE_URL
+      ? await listPublicListings(slug[1] as Category)
+      : [];
+  return (
+    <ScreenRouter
+      key={slug.join("/")}
+      parts={slug}
+      publicListings={publicListings}
+    />
+  );
 }

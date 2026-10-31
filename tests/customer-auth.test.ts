@@ -34,7 +34,7 @@ test("only a well-formed demo profile can populate the customer UI", () => {
       name: "Test",
       email: "demo@example.com",
       phone: "",
-      method: "google",
+      method: "phone",
     }),
     true,
   );
@@ -45,9 +45,20 @@ test("only a well-formed demo profile can populate the customer UI", () => {
       name: "Test",
       email: "",
       phone: "",
-      method: "google",
+      method: "phone",
     }),
     false,
   );
   assert.equal(isDemoCustomer({ kind: "demo", name: null }), false);
+  assert.equal(
+    isDemoCustomer({
+      kind: "demo",
+      id: "old",
+      name: "Old demo",
+      email: "",
+      phone: "",
+      method: "google",
+    }),
+    false,
+  );
 });

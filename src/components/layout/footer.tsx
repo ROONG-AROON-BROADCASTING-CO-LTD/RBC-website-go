@@ -45,7 +45,7 @@ export function Footer() {
           {
             title: "Partners",
             links: [
-              ["Become a Partner", "apply"],
+              ["Become a Partner", "partner-signup"],
               ["Partner portal", "partner/overview"],
             ],
           },

@@ -3,8 +3,8 @@
 import { Button } from "@/components/ui/button";
 import { useRBC } from "@/components/rbc/provider";
 
-export function SocialIcon({ provider }: { provider: "google" | "facebook" }) {
-  return provider === "google" ? (
+export function SocialIcon() {
+  return (
     <svg viewBox="0 0 24 24" aria-hidden="true" className="size-5">
       <path
         fill="#4285F4"
@@ -23,42 +23,22 @@ export function SocialIcon({ provider }: { provider: "google" | "facebook" }) {
         d="M12 5.97c1.47 0 2.79.5 3.82 1.5l2.87-2.88A9.6 9.6 0 0 0 12 2a10 10 0 0 0-8.93 5.51l3.34 2.59C7.2 7.73 9.4 5.97 12 5.97Z"
       />
     </svg>
-  ) : (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className="size-5">
-      <circle cx="12" cy="12" r="11" fill="#1877F2" />
-      <path
-        fill="white"
-        d="M13.6 22.9v-7.7h2.6l.4-3.1h-3V10c0-.9.25-1.5 1.5-1.5h1.6V5.7c-.28-.04-1.25-.12-2.38-.12-2.35 0-3.96 1.43-3.96 4.06v2.46H7.7v3.1h2.66v7.7a11.4 11.4 0 0 0 3.24 0Z"
-      />
-    </svg>
   );
 }
 
-export function SocialButtons({
-  onSelect,
-}: {
-  onSelect: (provider: "google" | "facebook") => void;
-}) {
+export function SocialButtons({ onSelect }: { onSelect: () => void }) {
   const { t } = useRBC();
   return (
-    <div className="grid grid-cols-2 gap-3">
+    <div>
       <Button
         variant="outline"
         size="lg"
         aria-label={t("Continue with Google")}
-        onClick={() => onSelect("google")}
+        className="w-full"
+        onClick={onSelect}
       >
-        <SocialIcon provider="google" />
+        <SocialIcon />
         Google
-      </Button>
-      <Button
-        variant="outline"
-        size="lg"
-        aria-label={t("Continue with Facebook")}
-        onClick={() => onSelect("facebook")}
-      >
-        <SocialIcon provider="facebook" />
-        Facebook
       </Button>
     </div>
   );

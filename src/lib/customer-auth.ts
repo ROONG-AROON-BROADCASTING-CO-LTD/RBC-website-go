@@ -1,4 +1,4 @@
-export type CustomerAuthMethod = "phone" | "google" | "facebook";
+export type CustomerAuthMethod = "phone";
 export type DemoCustomer = {
   kind: "demo";
   id: string;
@@ -50,6 +50,6 @@ export function isDemoCustomer(value: unknown): value is DemoCustomer {
     typeof profile.name === "string" &&
     typeof profile.phone === "string" &&
     typeof profile.email === "string" &&
-    ["phone", "google", "facebook"].includes(profile.method ?? "")
+    profile.method === "phone"
   );
 }

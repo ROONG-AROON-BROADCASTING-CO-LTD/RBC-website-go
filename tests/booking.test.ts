@@ -99,6 +99,7 @@ test("unknown routes do not silently render the wrong vehicle", () => {
   assert.equal(validRoute(["vehicle", "missing"]), false);
   assert.equal(validRoute(["wizard", "8"]), false);
   assert.equal(validRoute(["account", "unknown"]), false);
+  assert.equal(validRoute(["account", "reviews"]), true);
   assert.equal(validRoute(["search", "cars"]), true);
 });
 

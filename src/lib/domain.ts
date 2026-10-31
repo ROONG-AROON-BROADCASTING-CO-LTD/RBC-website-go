@@ -244,11 +244,12 @@ export const operationsNav = [
   "activity",
 ];
 export const accountNav = [
+  "profile",
   "bookings",
+  "reviews",
   "saved",
   "payments",
   "messages",
-  "profile",
 ];
 export const wizardSteps = [
   "Category",
@@ -274,8 +275,6 @@ export function validRoute(parts: string[]) {
   if (route === "experience") return ["andaman", "coast"].includes(id);
   return (
     !id &&
-    ["quote", "confirmation", "apply", "experiences", "help", "guide"].includes(
-      route,
-    )
+    ["quote", "confirmation", "experiences", "help", "guide"].includes(route)
   );
 }

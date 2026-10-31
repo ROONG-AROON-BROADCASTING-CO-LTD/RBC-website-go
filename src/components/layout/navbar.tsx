@@ -10,6 +10,7 @@ import {
   Heart,
   CalendarDays,
   UserRound,
+  LogOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,10 +27,12 @@ import { cn } from "@/lib/utils";
 import { useRBC } from "@/components/rbc/provider";
 import { useCustomerAuth } from "@/components/customer/auth/provider";
 import { LanguageSwitcher } from "./language-switcher";
+import { AccountMenu } from "@/components/customer/account-menu";
+import { accountPrimaryLinks } from "@/components/customer/account-navigation";
 
 export function Navbar() {
-  const { t, href, go, state } = useRBC();
-  const { customer, openAuth } = useCustomerAuth();
+  const { t, href, state } = useRBC();
+  const { customer, openAuth, signOut } = useCustomerAuth();
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
@@ -108,17 +111,7 @@ export function Navbar() {
           <div className="ml-auto flex items-center gap-3 lg:ml-0 lg:justify-end">
             <LanguageSwitcher darkText={glass} />
             {customer ? (
-              <Button
-                className={cn(
-                  "hidden min-w-32 rounded-xl font-semibold md:inline-flex",
-                  glass
-                    ? "bg-navy text-white hover:bg-navy/90"
-                    : "bg-white text-navy hover:bg-white/90",
-                )}
-                onClick={() => go("account/profile")}
-              >
-                {t("My account")}
-              </Button>
+              <AccountMenu glass={glass} />
             ) : (
               <Button
                 className={cn(
@@ -149,7 +142,7 @@ export function Navbar() {
                 <Menu />
               </Button>
             </SheetTrigger>
-            <SheetContent>
+            <SheetContent className="overflow-y-auto">
               <SheetHeader>
                 <SheetTitle>RBC GO</SheetTitle>
                 <SheetDescription>
@@ -158,13 +151,12 @@ export function Navbar() {
               </SheetHeader>
               <div className="grid grid-cols-2 gap-3 px-5 pt-4">
                 {customer ? (
-                  <SheetClose asChild>
-                    <Button variant="outline" className="col-span-2" asChild>
-                      <Link href={href("account/profile")}>
-                        {t("My account")}
-                      </Link>
-                    </Button>
-                  </SheetClose>
+                  <div className="col-span-2 rounded-xl bg-muted p-3">
+                    <p className="truncate font-semibold">{customer.name}</p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {customer.email || t("My account")}
+                    </p>
+                  </div>
                 ) : (
                   <>
                     <SheetClose asChild>
@@ -183,6 +175,36 @@ export function Navbar() {
                   </>
                 )}
               </div>
+              {customer && (
+                <div className="flex flex-col gap-2 px-5 pt-2">
+                  <nav
+                    aria-label={t("My account")}
+                    className="flex flex-col gap-1"
+                  >
+                    {accountPrimaryLinks.map(({ id, label, icon: Icon }) => (
+                      <SheetClose key={id} asChild>
+                        <Link
+                          href={href(`account/${id}`)}
+                          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-accent"
+                        >
+                          <Icon className="size-4 text-muted-foreground" />
+                          {t(label)}
+                        </Link>
+                      </SheetClose>
+                    ))}
+                  </nav>
+                  <SheetClose asChild>
+                    <Button
+                      variant="ghost"
+                      className="justify-start"
+                      onClick={() => void signOut()}
+                    >
+                      <LogOut data-icon="inline-start" />
+                      {t("Sign out")}
+                    </Button>
+                  </SheetClose>
+                </div>
+              )}
               <nav className="flex flex-col gap-2 p-5">
                 {[
                   { name: "Home", path: "" },
@@ -192,8 +214,10 @@ export function Navbar() {
                     name: c.name,
                     path: `search/${c.id}`,
                   })),
-                  { name: "My Bookings", path: "account/bookings" },
-                  { name: "Become a Partner", path: "apply" },
+                  ...(!customer
+                    ? [{ name: "My Bookings", path: "account/bookings" }]
+                    : []),
+                  { name: "Become a Partner", path: "partner-signup" },
                   { name: "Help", path: "help" },
                   ...(internalWorkspace
                     ? [{ name: "Design guide", path: "guide" }]
@@ -247,7 +271,9 @@ export function MobileNavbar() {
         const active = String(url).startsWith("search/")
           ? /^\/(th|en|zh)\/(search|vehicle|checkout)(\/|$)/.test(pathname)
           : url === "account/profile"
-            ? /\/account\/(profile|payments|messages)(\/|$)/.test(pathname)
+            ? /\/account\/(profile|reviews|payments|messages)(\/|$)/.test(
+                pathname,
+              )
             : pathname.startsWith(href(String(url)));
         if (url === "account/profile" && !customer) {
           return (

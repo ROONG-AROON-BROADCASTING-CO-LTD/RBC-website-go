@@ -6,11 +6,11 @@ import { Confirmation } from "./booking";
 const Checkout = dynamic(() => import("@/components/booking/checkout"));
 import { Experiences, Help, DesignGuide } from "./design";
 import { vehicleById, type Category } from "@/lib/domain";
+import type { PublicListing } from "@/lib/server/public-listings";
 import { useRBC } from "./provider";
 const Account = dynamic(() => import("@/components/customer/account"));
 const Partner = dynamic(() => import("@/components/partner/portal"));
 const Operations = dynamic(() => import("@/components/operations/workspace"));
-const Application = dynamic(() => import("@/components/partner/application"));
 const Wizard = dynamic(() => import("@/components/partner/listing-wizard"));
 export function ScreenLoading() {
   return (
@@ -28,7 +28,13 @@ export function ScreenLoading() {
     </div>
   );
 }
-export function ScreenRouter({ parts }: { parts: string[] }) {
+export function ScreenRouter({
+  parts,
+  publicListings = [],
+}: {
+  parts: string[];
+  publicListings?: PublicListing[];
+}) {
   const { ready } = useRBC();
   const [route, id] = parts;
   if (!route) return <Home />;
@@ -46,7 +52,13 @@ export function ScreenRouter({ parts }: { parts: string[] }) {
     return <ScreenLoading />;
   switch (route) {
     case "search":
-      return <SearchResults key={String(ready)} category={id as Category} />;
+      return (
+        <SearchResults
+          key={String(ready)}
+          category={id as Category}
+          publicListings={publicListings}
+        />
+      );
     case "vehicle":
       return <VehicleDetail vehicle={vehicleById(id)!} />;
     case "checkout":
@@ -63,8 +75,6 @@ export function ScreenRouter({ parts }: { parts: string[] }) {
       return <Partner tab={id || "overview"} />;
     case "operations":
       return <Operations tab={id || "overview"} />;
-    case "apply":
-      return <Application />;
     case "wizard":
       return <Wizard step={Number(id || 0)} />;
     case "experiences":

@@ -1,6 +1,7 @@
 "use client";
 import { useState, useId } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   ArrowRight,
   ShieldCheck,
@@ -13,6 +14,14 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from "@/components/ui/card";
 import { FieldGroup, Field, FieldLabel } from "@/components/ui/field";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -47,6 +56,7 @@ import {
 } from "./common";
 import { SearchPanel } from "./search-panel";
 import { cn } from "@/lib/utils";
+import type { PublicListing } from "@/lib/server/public-listings";
 import { CardSlider } from "./card-slider";
 import { Rating } from "./rating";
 import { VehicleGallery } from "./vehicle-gallery";
@@ -67,14 +77,15 @@ export function Home() {
           name="sea"
           alt={t("Your journey. By road, sea, or sky.")}
           priority
+          sizes="100vw"
           className="absolute inset-0"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-navy/90 via-navy/60 to-navy/50 md:via-navy/50 md:to-navy/5" />
+        <div className="absolute inset-0 bg-gradient-to-r from-navy/70 via-navy/40 to-navy/25 md:from-navy/55 md:via-navy/30 md:to-navy/10" />
         <div className="relative mx-auto max-w-7xl px-4 pb-12 pt-30 md:px-5 md:pb-20 md:pt-36">
           <p className="mb-3 text-center text-xs font-semibold uppercase tracking-[.24em] text-white/70">
             ROAD · SEA · SKY
           </p>
-          <h1 className="mx-auto max-w-6xl text-center text-[30px] font-semibold leading-[1.3] tracking-tight md:text-[clamp(3rem,5vw,5.5rem)]">
+          <h1 className="mx-auto max-w-6xl text-center text-[30px] font-semibold leading-[1.3] tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)] md:text-[clamp(3rem,5vw,5.5rem)]">
             {t("Every journey, your way.")}
           </h1>
           <p className="mx-auto mt-3 max-w-3xl text-center text-sm leading-6 text-white/80 md:text-base">
@@ -417,8 +428,14 @@ function FiltersForm({
     </FieldGroup>
   );
 }
-export function SearchResults({ category }: { category: Category }) {
-  const { state, t, href } = useRBC();
+export function SearchResults({
+  category,
+  publicListings,
+}: {
+  category: Category;
+  publicListings: PublicListing[];
+}) {
+  const { state, t, href, locale } = useRBC();
   const initial: Filters = {
     location: state.search.location,
     mode: "all",
@@ -454,6 +471,26 @@ export function SearchResults({ category }: { category: Category }) {
           ? b.rating - a.rating
           : 0,
     );
+  const publicResults = publicListings
+    .filter(
+      (listing) =>
+        (filters.location === "All locations" ||
+          listing.location_text
+            .toLocaleLowerCase()
+            .includes(filters.location.toLocaleLowerCase())) &&
+        listing.capacity >= Number(filters.capacity) &&
+        (!filters.max ||
+          Number(listing.base_price_satang) / 100 <= Number(filters.max)),
+    )
+    .sort((a, b) =>
+      sort === "Price: low to high"
+        ? Number(a.base_price_satang) - Number(b.base_price_satang)
+        : 0,
+    );
+  const price = new Intl.NumberFormat(
+    locale === "th" ? "th-TH" : locale === "zh" ? "zh-CN" : "en-GB",
+    { style: "currency", currency: "THB", maximumFractionDigits: 2 },
+  );
   const reset = () =>
     setFilters({
       ...initial,
@@ -490,7 +527,11 @@ export function SearchResults({ category }: { category: Category }) {
             <PageHeading
               className="mb-0"
               title={categories.find((c) => c.id === category)!.name}
-              description="Sample inventory and reviews"
+              description={
+                publicResults.length
+                  ? "Browse partner listings and sample inventory"
+                  : "Sample inventory and reviews"
+              }
             />
             <div className="flex shrink-0 items-center gap-3">
               <Sheet>
@@ -522,7 +563,8 @@ export function SearchResults({ category }: { category: Category }) {
                     </Button>
                     <SheetClose asChild>
                       <Button className="w-full">
-                        {t("Show results")} ({results.length})
+                        {t("Show results")} (
+                        {results.length + publicResults.length})
                       </Button>
                     </SheetClose>
                   </div>
@@ -544,9 +586,79 @@ export function SearchResults({ category }: { category: Category }) {
               </div>
             </div>
           </div>
+          {publicResults.length > 0 && (
+            <section
+              className="mb-8 flex flex-col gap-4"
+              aria-label={t("Approved partner listings")}
+            >
+              <div>
+                <h2 className="text-xl font-semibold">
+                  {t("Approved partner listings")}
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {t(
+                    "These vehicles are listed by reviewed partners. Booking will open later.",
+                  )}
+                </p>
+              </div>
+              {publicResults.map((listing) => (
+                <Card
+                  key={listing.id}
+                  className="overflow-hidden py-0 md:flex-row md:gap-0"
+                >
+                  <div className="relative aspect-[1.5] bg-muted md:aspect-auto md:min-h-60 md:w-[38%] md:shrink-0">
+                    {listing.image_id && (
+                      <Image
+                        src={`/api/listing-images/${listing.image_id}`}
+                        alt={listing.title}
+                        fill
+                        sizes="(max-width: 768px) 100vw, 300px"
+                        unoptimized
+                        className="object-cover"
+                      />
+                    )}
+                  </div>
+                  <div className="flex min-w-0 flex-1 flex-col">
+                    <CardHeader className="pt-4">
+                      <CardTitle className="text-lg">
+                        <Link href={href(`listing/${listing.id}`)}>
+                          {listing.title}
+                        </Link>
+                      </CardTitle>
+                      <CardDescription>
+                        {listing.location_text} · {listing.business_name}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex-1 text-sm text-muted-foreground">
+                      <p>{t(`${listing.capacity} guests`)}</p>
+                      <p className="mt-2 line-clamp-2">{listing.description}</p>
+                    </CardContent>
+                    <CardFooter className="mt-auto justify-between gap-3 py-3">
+                      <div>
+                        <p className="font-semibold">
+                          {price.format(
+                            Number(listing.base_price_satang) / 100,
+                          )}
+                        </p>
+                        <Badge variant="secondary" className="mt-2">
+                          {t("Booking coming soon")}
+                        </Badge>
+                      </div>
+                      <Button variant="outline" asChild>
+                        <Link href={href(`listing/${listing.id}`)}>
+                          {t("View details")}
+                        </Link>
+                      </Button>
+                    </CardFooter>
+                  </div>
+                </Card>
+              ))}
+            </section>
+          )}
           <div className="mb-4 flex flex-wrap items-center gap-2">
             <p className="mr-2 text-sm text-muted-foreground">
-              {results.length} {t("results")} · {t(state.search.location)}
+              {t("Sample inventory and reviews")} · {results.length}{" "}
+              {t("results")}
             </p>
             {Object.entries(filters)
               .filter(

@@ -2,13 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import {
-  ArrowLeft,
-  ArrowRight,
-  ArrowUpRight,
-  Smartphone,
-  UserRound,
-} from "lucide-react";
+import { ArrowLeft, ArrowUpRight, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -31,12 +25,14 @@ export default function CustomerAuthDialog({
   initialMode,
   onClose,
   onComplete,
+  googleEnabled,
 }: {
   initialMode: AuthMode;
   onClose: () => void;
   onComplete: (profile: Omit<DemoCustomer, "kind" | "id">) => void;
+  googleEnabled: boolean;
 }) {
-  const { state, t, href } = useRBC();
+  const { state, t, href, locale } = useRBC();
   const [mode, setMode] = useState(initialMode);
   const [country, setCountry] = useState("+66");
   const [phone, setPhone] = useState(state.traveler.phone);
@@ -47,11 +43,10 @@ export default function CustomerAuthDialog({
     phone: string;
     expiresAt: number;
   } | null>(null);
-  const [social, setSocial] = useState<"google" | "facebook" | null>(null);
+  const [social, setSocial] = useState(false);
   const registering = mode === "register";
-  const providerName = social === "google" ? "Google" : "Facebook";
   const title = social
-    ? "Try social sign-in"
+    ? "Social sign-in unavailable"
     : challenge
       ? "Verify your phone number"
       : registering
@@ -85,40 +80,13 @@ export default function CustomerAuthDialog({
         {social ? (
           <div className="flex flex-col gap-5">
             <div className="flex items-center gap-3 rounded-xl border p-4">
-              <SocialIcon provider={social} />
-              <p className="font-semibold">{providerName}</p>
+              <SocialIcon />
+              <p className="font-semibold">Google</p>
             </div>
             <p className="text-sm leading-7 text-muted-foreground">
-              {t(
-                "This provider is not connected yet. Try a demo customer account to preview the experience.",
-              )}
+              {t("Google sign-in is not configured yet.")}
             </p>
-            <div className="flex items-center gap-3 rounded-xl bg-secondary p-4">
-              <span className="flex size-10 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                <UserRound className="size-5" />
-              </span>
-              <div>
-                <p className="font-semibold">{t("Demo traveler")}</p>
-                <p className="text-xs text-muted-foreground">
-                  traveler@example.com
-                </p>
-              </div>
-            </div>
-            <Button
-              size="lg"
-              onClick={() =>
-                onComplete({
-                  method: social,
-                  name: t("Demo traveler"),
-                  email: "traveler@example.com",
-                  phone: "",
-                })
-              }
-            >
-              {t("Continue with demo account")}
-              <ArrowRight data-icon="inline-end" />
-            </Button>
-            <Button variant="ghost" onClick={() => setSocial(null)}>
+            <Button variant="ghost" onClick={() => setSocial(false)}>
               <ArrowLeft data-icon="inline-start" />
               {t("Back")}
             </Button>
@@ -232,6 +200,11 @@ export default function CustomerAuthDialog({
                 </Button>
               </FieldGroup>
             </form>
+            <Button variant="outline" size="lg" asChild>
+              <Link href={href(`email?mode=${mode}`)} onClick={onClose}>
+                {t("Continue with email")}
+              </Link>
+            </Button>
             <div className="flex items-center gap-4">
               <Separator className="flex-1" />
               <span className="shrink-0 text-xs text-muted-foreground">
@@ -239,7 +212,17 @@ export default function CustomerAuthDialog({
               </span>
               <Separator className="flex-1" />
             </div>
-            <SocialButtons onSelect={setSocial} />
+            <SocialButtons
+              onSelect={() => {
+                if (googleEnabled) {
+                  window.location.assign(
+                    `/api/auth/google/start?locale=${locale}`,
+                  );
+                } else {
+                  setSocial(true);
+                }
+              }}
+            />
             <p className="text-center text-sm text-muted-foreground">
               {t(registering ? "Already have an account?" : "New to RBC GO?")}{" "}
               <button
@@ -257,7 +240,11 @@ export default function CustomerAuthDialog({
           </>
         )}
         <div className="border-t pt-4 text-center text-[11px] leading-6 text-muted-foreground">
-          <p>{t("Demo only. Google, Facebook and SMS are not connected.")}</p>
+          <p>
+            {t(
+              "SMS verification is a demo. Email and configured social sign-ins use server sessions.",
+            )}
+          </p>
           <div className="flex justify-center gap-3">
             <Link
               className="underline underline-offset-2"
