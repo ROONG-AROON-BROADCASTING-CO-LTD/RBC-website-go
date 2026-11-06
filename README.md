@@ -25,6 +25,12 @@ npm run start
 
 Build สร้าง standalone server และคัดลอก static assets ผ่าน `postbuild` แล้ว `npm run start` จะรัน standalone server โดยตรง รองรับ `-p` และ `-H` เช่น `npm run start -- -p 3100 -H localhost`
 
+### PostgreSQL TLS / `SELF_SIGNED_CERT_IN_CHAIN`
+
+เว็บและ migration ใช้ CA สาธารณะของ Supabase ที่รวมไว้ในโค้ดโดยอัตโนมัติเมื่อ `DATABASE_URL` ชี้ไปที่ `*.pooler.supabase.com` พร้อมตรวจ certificate และ hostname (`rejectUnauthorized: true`) ตาม [แนวทาง SSL ของ Supabase](https://supabase.com/docs/guides/platform/ssl-enforcement) จึงไม่ต้องปิดการตรวจสอบ TLS เพื่อแก้ error นี้
+
+หากเกิดบน Vercel/โฮสต์อื่น ให้ deploy โค้ดล่าสุดและตรวจว่า `DATABASE_URL` ของ environment ที่มีปัญหาชี้ไปยัง pooler ที่ถูกต้อง สำหรับฐานข้อมูลผู้ให้บริการอื่นหรือเมื่อเปลี่ยน CA ให้ตั้ง `DATABASE_SSL_CA` เป็นเนื้อหา PEM ของ root CA ที่ดาวน์โหลดจากผู้ให้บริการ (รองรับทั้งหลายบรรทัดและ `\n`) แล้ว restart/redeploy ตัวแปรนี้ใช้เฉพาะฝั่งเซิร์ฟเวอร์และมีผลทั้งเว็บกับ migration ไม่ใช่ path ของไฟล์ ส่วนการเชื่อมต่ออื่นที่ไม่ได้ระบุ CA ยังคงใช้ SSL settings จาก URL ตามเดิม
+
 ## ตรวจระบบ
 
 ```sh
