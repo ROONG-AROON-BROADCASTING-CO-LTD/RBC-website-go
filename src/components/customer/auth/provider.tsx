@@ -11,6 +11,7 @@ import {
 import dynamic from "next/dynamic";
 import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { accountAreaForPath } from "@/lib/account-area";
 import { useRBC } from "@/components/rbc/provider";
 import { logoutCustomer } from "@/lib/server/customer-actions";
 
@@ -66,9 +67,8 @@ export function CustomerAuthProvider({
       !ready ||
       serverAccount ||
       loginPromptChecked.current ||
-      /^\/(th|en|zh)\/(email|account-access|partner|partner-login|partner-signup|apply|operations)(\/|$)/.test(
-        pathname,
-      )
+      accountAreaForPath(pathname) !== "customer" ||
+      /^\/(th|en|zh)\/(email|account-access)(\/|$)/.test(pathname)
     )
       return;
     // Delay the invitation until the first screen has settled. Cancel it when

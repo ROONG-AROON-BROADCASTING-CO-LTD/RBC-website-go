@@ -11,6 +11,7 @@ import {
   CalendarDays,
   UserRound,
   LogOut,
+  BriefcaseBusiness,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,16 +25,21 @@ import {
 } from "@/components/ui/sheet";
 import { categories, searchCategoryForPath } from "@/lib/domain";
 import { cn } from "@/lib/utils";
+import { accountAreaForPath } from "@/lib/account-area";
 import { useRBC } from "@/components/rbc/provider";
 import { useCustomerAuth } from "@/components/customer/auth/provider";
 import { LanguageSwitcher } from "./language-switcher";
 import { AccountMenu } from "@/components/customer/account-menu";
-import { accountPrimaryLinks } from "@/components/customer/account-navigation";
+import {
+  accountPrimaryLinks,
+  partnerAccountLinks,
+} from "@/components/customer/account-navigation";
 
 export function Navbar() {
   const { t, href, state } = useRBC();
   const { customer, openAuth, signOut } = useCustomerAuth();
   const pathname = usePathname();
+  const isPartner = accountAreaForPath(pathname) === "partner";
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 120);
@@ -42,6 +48,24 @@ export function Navbar() {
   }, []);
   const isHome = pathname === href();
   const glass = scrolled || !isHome;
+  const alternateArea = isPartner
+    ? {
+        path: customer ? "account/profile" : "email",
+        label: customer ? "Customer account" : "Customer sign in",
+        icon: UserRound,
+      }
+    : {
+        path: customer ? "partner/overview" : "partner-login",
+        label: customer ? "Partner area" : "Partner sign in",
+        icon: BriefcaseBusiness,
+      };
+  const AlternateIcon = alternateArea.icon;
+  const currentAccountLinks = isPartner
+    ? partnerAccountLinks
+    : accountPrimaryLinks.map(({ id, ...link }) => ({
+        ...link,
+        path: `account/${id}`,
+      }));
   const searchCategory = searchCategoryForPath(pathname, state.search.category);
   const mainLinks = [
     { name: "Home", path: "", active: isHome },
@@ -63,18 +87,25 @@ export function Navbar() {
             : "bg-transparent text-white",
         )}
       >
-        <div className="mx-auto flex h-20 max-w-[1440px] items-center gap-3 px-4 md:px-6 lg:grid lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
+        <div className="mx-auto flex h-20 w-full max-w-[1440px] items-center gap-3 px-4 md:px-6 xl:grid xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
           <Link
             href={href()}
             aria-label="RBC GO"
-            className="mr-auto shrink-0 font-serif text-2xl font-bold tracking-tight lg:mr-0 lg:text-[28px]"
+            className="mr-auto shrink-0 font-serif text-2xl font-bold tracking-tight xl:mr-0 xl:justify-self-start xl:text-[28px]"
           >
-            RBC GO
+            <span className="flex flex-col">
+              RBC GO
+              {isPartner && (
+                <span className="font-sans text-[10px] tracking-[0.2em]">
+                  PARTNERS
+                </span>
+              )}
+            </span>
           </Link>
           <nav
             aria-label={t("Main navigation")}
             className={cn(
-              "hidden items-center rounded-full border p-1 text-base lg:inline-flex",
+              "hidden items-center rounded-full border p-1 text-base xl:inline-flex",
               glass
                 ? "border-navy/10 bg-[#e9edf3]"
                 : "border-white/25 bg-white/10",
@@ -100,10 +131,32 @@ export function Navbar() {
               </Link>
             ))}
           </nav>
-          <div className="ml-auto flex items-center gap-3 lg:ml-0 lg:justify-end">
+          <div className="ml-auto flex shrink-0 items-center gap-2 xl:ml-0 xl:justify-self-end">
             <LanguageSwitcher darkText={glass} />
+            <Button
+              variant="ghost"
+              className={cn(
+                "hidden md:inline-flex",
+                glass
+                  ? "text-navy hover:bg-navy/10 hover:text-navy"
+                  : "text-white hover:bg-white/10 hover:text-white",
+              )}
+              asChild
+            >
+              <Link href={href(alternateArea.path)}>
+                <AlternateIcon data-icon="inline-start" />
+                {t(alternateArea.label)}
+              </Link>
+            </Button>
             {customer ? (
-              <AccountMenu glass={glass} />
+              <AccountMenu
+                glass={glass}
+                area={isPartner ? "partner" : "customer"}
+              />
+            ) : isPartner ? (
+              <Button className="hidden md:inline-flex" asChild>
+                <Link href={href("partner-login")}>{t("Partner sign in")}</Link>
+              </Button>
             ) : (
               <Button
                 className={cn(
@@ -114,7 +167,7 @@ export function Navbar() {
                 )}
                 onClick={() => openAuth("login")}
               >
-                {t("Sign In")}
+                {t("Customer sign in")}
               </Button>
             )}
           </div>
@@ -124,7 +177,7 @@ export function Navbar() {
                 variant="ghost"
                 size="icon"
                 className={cn(
-                  "lg:hidden",
+                  "xl:hidden",
                   glass
                     ? "text-navy hover:bg-navy/10 hover:text-navy"
                     : "text-white hover:bg-white/10 hover:text-white",
@@ -134,81 +187,158 @@ export function Navbar() {
                 <Menu />
               </Button>
             </SheetTrigger>
-            <SheetContent className="overflow-y-auto">
+            <SheetContent className="overflow-y-auto data-[side=right]:w-[min(100vw,24rem)]">
               <SheetHeader>
-                <SheetTitle>RBC GO</SheetTitle>
+                <SheetTitle>
+                  {isPartner ? "RBC GO PARTNERS" : "RBC GO"}
+                </SheetTitle>
                 <SheetDescription>
-                  {t("Your journey. By road, sea, or sky.")}
+                  {t(
+                    isPartner
+                      ? "List vehicles and manage rental requests."
+                      : "Book vehicles and manage your trips.",
+                  )}
                 </SheetDescription>
               </SheetHeader>
-              <div className="grid grid-cols-2 gap-3 px-5 pt-4">
-                {customer ? (
-                  <div className="col-span-2 rounded-xl bg-muted p-3">
-                    <p className="truncate font-semibold">{customer.name}</p>
-                    <p className="truncate text-xs text-muted-foreground">
-                      {customer.email || t("My account")}
-                    </p>
-                  </div>
-                ) : (
-                  <>
-                    <SheetClose asChild>
-                      <Button onClick={() => openAuth("login")}>
-                        {t("Sign In")}
-                      </Button>
-                    </SheetClose>
-                    <SheetClose asChild>
-                      <Button
-                        variant="outline"
-                        onClick={() => openAuth("register")}
-                      >
-                        {t("Register")}
-                      </Button>
-                    </SheetClose>
-                  </>
-                )}
-              </div>
               {customer && (
-                <div className="flex flex-col gap-2 px-5 pt-2">
-                  <nav
-                    aria-label={t("My account")}
-                    className="flex flex-col gap-1"
-                  >
-                    {accountPrimaryLinks.map(({ id, label, icon: Icon }) => (
-                      <SheetClose key={id} asChild>
-                        <Link
-                          href={href(`account/${id}`)}
-                          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-accent"
-                        >
-                          <Icon className="size-4 text-muted-foreground" />
-                          {t(label)}
-                        </Link>
-                      </SheetClose>
-                    ))}
-                  </nav>
-                  <SheetClose asChild>
-                    <Button
-                      variant="ghost"
-                      className="justify-start"
-                      onClick={() => void signOut()}
-                    >
-                      <LogOut data-icon="inline-start" />
-                      {t("Sign out")}
-                    </Button>
-                  </SheetClose>
+                <div className="mx-5 rounded-xl bg-muted p-3">
+                  <p className="truncate font-semibold">{customer.name}</p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {customer.email || t("My account")}
+                  </p>
                 </div>
+              )}
+              <section
+                className="flex flex-col gap-3 px-5 pt-4"
+                aria-label={t(isPartner ? "Partner area" : "Customer account")}
+              >
+                <h2 className="text-sm font-semibold">
+                  {t(isPartner ? "Partner area" : "Customer account")}
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  {t(
+                    isPartner
+                      ? "List vehicles and manage rental requests."
+                      : "Book vehicles and manage your trips.",
+                  )}
+                </p>
+                {!customer &&
+                  (isPartner ? (
+                    <>
+                      <SheetClose asChild>
+                        <Button asChild>
+                          <Link href={href("partner-login")}>
+                            {t("Partner sign in")}
+                          </Link>
+                        </Button>
+                      </SheetClose>
+                      <SheetClose asChild>
+                        <Button variant="outline" asChild>
+                          <Link href={href("partner-signup")}>
+                            {t("Register as a partner")}
+                          </Link>
+                        </Button>
+                      </SheetClose>
+                    </>
+                  ) : (
+                    <>
+                      <SheetClose asChild>
+                        <Button onClick={() => openAuth("login")}>
+                          {t("Customer sign in")}
+                        </Button>
+                      </SheetClose>
+                      <SheetClose asChild>
+                        <Button
+                          variant="outline"
+                          onClick={() => openAuth("register")}
+                        >
+                          {t("Create a customer account")}
+                        </Button>
+                      </SheetClose>
+                    </>
+                  ))}
+                {customer && (
+                  <div className="flex flex-col gap-2">
+                    <nav
+                      aria-label={t(
+                        isPartner ? "Partner account" : "Customer account",
+                      )}
+                      className="flex flex-col gap-1"
+                    >
+                      {currentAccountLinks.map(
+                        ({ path, label, icon: Icon }) => (
+                          <SheetClose key={path} asChild>
+                            <Link
+                              href={href(path)}
+                              className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-accent"
+                            >
+                              <Icon className="size-4 text-muted-foreground" />
+                              {t(label)}
+                            </Link>
+                          </SheetClose>
+                        ),
+                      )}
+                    </nav>
+                  </div>
+                )}
+              </section>
+              <section
+                className="mx-5 mt-4 flex flex-col gap-3 rounded-xl border p-4"
+                aria-label={t(isPartner ? "Customer account" : "Partner area")}
+              >
+                <h2 className="text-sm font-semibold">
+                  {t(isPartner ? "Customer account" : "Partner area")}
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  {t(
+                    isPartner
+                      ? "Book vehicles and manage your trips."
+                      : "List vehicles and manage rental requests.",
+                  )}
+                </p>
+                <SheetClose asChild>
+                  <Button variant="outline" asChild>
+                    <Link href={href(alternateArea.path)}>
+                      {t(alternateArea.label)}
+                    </Link>
+                  </Button>
+                </SheetClose>
+                {!isPartner && !customer && (
+                  <SheetClose asChild>
+                    <Link
+                      href={href("partner-signup")}
+                      className="text-center text-sm font-semibold text-primary hover:underline"
+                    >
+                      {t("Register as a partner")}
+                    </Link>
+                  </SheetClose>
+                )}
+              </section>
+              {customer && (
+                <SheetClose asChild>
+                  <Button
+                    variant="ghost"
+                    className="mx-5 justify-start"
+                    onClick={() => void signOut()}
+                  >
+                    <LogOut data-icon="inline-start" />
+                    {t("Sign out of both areas")}
+                  </Button>
+                </SheetClose>
               )}
               <nav className="flex flex-col gap-2 p-5">
                 {[
                   { name: "Home", path: "" },
                   { name: "Search Vehicles", path: `search/${searchCategory}` },
-                  ...categories.map((c) => ({
-                    name: c.name,
-                    path: `search/${c.id}`,
-                  })),
-                  ...(!customer
+                  ...(!isPartner
+                    ? categories.map((c) => ({
+                        name: c.name,
+                        path: `search/${c.id}`,
+                      }))
+                    : []),
+                  ...(!customer && !isPartner
                     ? [{ name: "My Bookings", path: "account/bookings" }]
                     : []),
-                  { name: "Become a Partner", path: "partner-signup" },
                   { name: "Help", path: "help" },
                 ].map((link) => (
                   <SheetClose key={`${link.name}-${link.path}`} asChild>
@@ -244,6 +374,7 @@ export function MobileNavbar() {
   const { customer, openAuth } = useCustomerAuth();
   const pathname = usePathname();
   const category = searchCategoryForPath(pathname, state.search.category);
+  if (accountAreaForPath(pathname) !== "customer") return null;
   return (
     <nav
       aria-label={t("Mobile navigation")}
@@ -253,7 +384,7 @@ export function MobileNavbar() {
         [Search, "Search", "search/" + category],
         [Heart, "Saved", "account/saved"],
         [CalendarDays, "Bookings", "account/bookings"],
-        [UserRound, "Account", "account/profile"],
+        [UserRound, "Customer account", "account/profile"],
       ].map(([Icon, label, url]) => {
         const I = Icon as typeof Search;
         const active = String(url).startsWith("search/")

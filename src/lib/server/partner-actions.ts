@@ -156,7 +156,11 @@ export async function submitPartner(
   const account = await currentAccount();
   if (!account) return { error: "sign_in_required" };
   try {
-    await savePartnerDraft(account.id, String(form.get("business") ?? ""));
+    await savePartnerDraft(
+      account.id,
+      String(form.get("business") ?? ""),
+      form.getAll("rentalCategories"),
+    );
     const files = form
       .getAll("documents")
       .filter((item): item is File => item instanceof File && item.size > 0);

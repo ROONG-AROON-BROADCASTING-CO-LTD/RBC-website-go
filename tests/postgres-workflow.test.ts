@@ -19,6 +19,7 @@ test(
     const { getDb } = await import("../src/lib/server/db");
     const {
       savePartnerDraft,
+      getPartnerApplication,
       addPartnerDocument,
       submitPartnerApplication,
       reviewPartnerApplication,
@@ -55,14 +56,43 @@ test(
       await sql`insert into rbc_go.staff_members (account_id, role)
       values (${reviewerId}, 'reviewer')`;
 
-      const application = await savePartnerDraft(ownerId, "Test fleet");
+      await assert.rejects(savePartnerDraft(ownerId, "Test fleet", []), {
+        code: "invalid_rental_categories",
+      });
+      await assert.rejects(
+        savePartnerDraft(ownerId, "Test fleet", ["unknown"]),
+        { code: "invalid_rental_categories" },
+      );
+      const application = await savePartnerDraft(ownerId, "Test fleet", [
+        "cars",
+        "boats",
+      ]);
+      assert.deepEqual(application.rental_categories, ["cars", "boats"]);
+      assert.deepEqual(
+        (await getPartnerApplication(ownerId))?.rental_categories,
+        ["cars", "boats"],
+      );
+      await savePartnerDraft(ownerId, "Test fleet", ["cars", "boats", "jets"]);
+      assert.deepEqual(
+        (await getPartnerApplication(ownerId))?.rental_categories,
+        ["cars", "boats", "jets"],
+      );
       await addPartnerDocument(
         ownerId,
         "business.pdf",
         "application/pdf",
         Buffer.from("%PDF-1.4\ntest"),
       );
-      await submitPartnerApplication(ownerId);
+      const submitted = await submitPartnerApplication(ownerId);
+      assert.deepEqual(submitted.rental_categories, ["cars", "boats", "jets"]);
+      await assert.rejects(
+        savePartnerDraft(ownerId, "Changed fleet", ["motorcycles"]),
+        { code: "application_locked" },
+      );
+      assert.deepEqual(
+        (await getPartnerApplication(ownerId))?.rental_categories,
+        ["cars", "boats", "jets"],
+      );
       await reviewPartnerApplication(reviewerId, application.id, "approved");
 
       const firstImage = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10, 1]);

@@ -215,7 +215,7 @@ export function PartnerAuthForm({
                 ? t("Processing...")
                 : register
                   ? t("Send verification code")
-                  : t("Sign In")}
+                  : t("Partner sign in")}
             </Button>
           </form>
         )}
@@ -225,9 +225,20 @@ export function PartnerAuthForm({
             href={`/${locale}/${register ? "partner-login" : "partner-signup"}`}
             className="font-semibold text-primary underline-offset-4 hover:underline"
           >
-            {register ? t("Sign In") : t("Register as a partner")}
+            {register ? t("Partner sign in") : t("Register as a partner")}
           </Link>
         </p>
+        <div className="mt-6 rounded-xl bg-muted p-4 text-center text-sm">
+          <p className="text-muted-foreground">
+            {t("Looking to book a vehicle?")}
+          </p>
+          <Link
+            href={`/${locale}/email`}
+            className="font-semibold text-primary underline-offset-4 hover:underline"
+          >
+            {t("Customer sign in")}
+          </Link>
+        </div>
       </div>
     </main>
   );

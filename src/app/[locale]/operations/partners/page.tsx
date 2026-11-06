@@ -1,5 +1,6 @@
 import { createTranslator } from "@/lib/i18n";
 import Link from "next/link";
+import { partnerCategoryLabel } from "@/lib/partner-categories";
 import { notFound, redirect } from "next/navigation";
 import { currentAccount } from "@/lib/server/auth";
 import { getDb } from "@/lib/server/db";
@@ -7,6 +8,7 @@ import { reviewApplication } from "./actions";
 type ApplicationRow = {
   id: string;
   business_name: string;
+  rental_categories: string[];
   status: string;
   feedback: string | null;
   submitted_at: Date | null;
@@ -42,7 +44,7 @@ export default async function PartnerReviews({
   if (!staff) notFound();
   const applications = await sql<ApplicationRow[]>`
     select applications.id, applications.business_name, applications.status,
-           applications.feedback, applications.submitted_at,
+           applications.feedback, applications.submitted_at, applications.rental_categories,
            accounts.display_name, accounts.email
     from rbc_go.partner_applications applications
     join rbc_go.accounts accounts on accounts.id = applications.owner_account_id
@@ -116,6 +118,14 @@ export default async function PartnerReviews({
                 {t(application.status)}
               </span>
             </div>
+            <p className="mt-4 text-sm">
+              <strong>{t("Rental categories")}: </strong>
+              {application.rental_categories.length
+                ? application.rental_categories
+                    .map((category) => t(partnerCategoryLabel(category)))
+                    .join(" · ")
+                : t("Not specified in the original application")}
+            </p>
             <div className="mt-5">
               <p className="text-sm font-semibold">{t("Documents")}</p>
               <ul className="mt-2 space-y-2 text-sm">

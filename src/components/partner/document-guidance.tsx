@@ -122,8 +122,10 @@ function DocumentGroups({
 
 export function PartnerDocumentGuidance({
   t,
+  categories,
 }: {
   t: (text: string) => string;
+  categories: readonly string[];
 }) {
   return (
     <div
@@ -159,7 +161,20 @@ export function PartnerDocumentGuidance({
         <h3 id="partner-vehicle-documents" className="font-semibold">
           {t("2. Vehicle documents — every category, every vehicle")}
         </h3>
-        <DocumentGroups groups={vehicleGroups} t={t} />
+        {categories.length ? (
+          <DocumentGroups
+            groups={vehicleGroups.filter((group) =>
+              categories.includes(group.id),
+            )}
+            t={t}
+          />
+        ) : (
+          <p className="text-muted-foreground">
+            {t(
+              "Select rental categories above to see the documents for each vehicle type.",
+            )}
+          </p>
+        )}
       </section>
       <p className="text-muted-foreground">
         {t(
