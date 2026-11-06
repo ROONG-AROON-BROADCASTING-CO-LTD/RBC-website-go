@@ -10,6 +10,8 @@ import experiences from "./translations/th/experiences.json";
 import guide from "./translations/th/guide.json";
 import catalog from "./translations/th/catalog.json";
 import legacy from "./translations/th/legacy.json";
+import workspace from "./translations/th/workspace.json";
+import zhWorkspace from "./translations/zh/workspace.json";
 import zhShared from "./translations/zh/shared.json";
 import zhHome from "./translations/zh/home.json";
 import zhSearch from "./translations/zh/search.json";
@@ -34,6 +36,7 @@ const dictionary: Record<string, string> = {
   ...guide,
   ...catalog,
   ...legacy,
+  ...workspace,
 };
 
 const chineseDictionary: Record<string, string> = {
@@ -45,7 +48,25 @@ const chineseDictionary: Record<string, string> = {
   ...zhAccount,
   ...zhExperiences,
   ...zhCatalog,
+  ...zhWorkspace,
 };
+
+export function createTranslator(locale: string) {
+  const supported: Locale = locale === "en" || locale === "zh" ? locale : "th";
+  return (text: string) => translate(supported, text);
+}
+export function bookingStatusLabel(locale: string, status: string) {
+  const labels: Record<string, string> = {
+    requested: "Awaiting partner quote",
+    held: "Awaiting payment",
+    confirmed: "Booking confirmed",
+    completed: "Completed",
+    declined: "Partner declined the request",
+    cancelled: "Cancelled",
+    expired: "Quote expired",
+  };
+  return createTranslator(locale)(labels[status] ?? status);
+}
 
 export function translate(locale: Locale, text: string): string {
   if (locale === "en") return text;

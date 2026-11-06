@@ -26,19 +26,34 @@ export function SocialIcon() {
   );
 }
 
-export function SocialButtons({ onSelect }: { onSelect: () => void }) {
+export function SocialButtons({
+  onSelect,
+  href,
+}: {
+  onSelect: () => void;
+  href?: string;
+}) {
   const { t } = useRBC();
   return (
     <div>
       <Button
+        asChild={Boolean(href)}
         variant="outline"
         size="lg"
         aria-label={t("Continue with Google")}
         className="w-full"
-        onClick={onSelect}
+        onClick={href ? undefined : onSelect}
       >
-        <SocialIcon />
-        Google
+        {href ? (
+          <a href={href}>
+            <SocialIcon /> Google
+          </a>
+        ) : (
+          <>
+            <SocialIcon />
+            Google
+          </>
+        )}
       </Button>
     </div>
   );

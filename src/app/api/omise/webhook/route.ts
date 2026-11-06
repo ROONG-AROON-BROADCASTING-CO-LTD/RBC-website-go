@@ -1,5 +1,6 @@
 import { applyOmiseWebhookCharge } from "@/lib/server/booking-payments";
-import { verifyOmiseWebhook } from "@/lib/server/omise";
+import { dispatchNotifications } from "@/lib/server/dispatch-notifications";
+import { isOmiseId, verifyOmiseWebhook } from "@/lib/server/omise";
 
 export const runtime = "nodejs";
 
@@ -14,7 +15,7 @@ export async function POST(request: Request) {
     )
   )
     return new Response("Unauthorized", { status: 401 });
-  let event: { key?: string; data?: { id?: string } };
+  let event: { id?: string; key?: string; data?: { id?: string } };
   try {
     event = JSON.parse(body);
   } catch {
@@ -22,10 +23,11 @@ export async function POST(request: Request) {
   }
   if (
     event.key === "charge.complete" &&
-    /^chrg_test_[a-z0-9]+$/.test(event.data?.id ?? "")
+    isOmiseId("chrg", event.data?.id ?? "")
   ) {
     try {
-      await applyOmiseWebhookCharge(event.data!.id!);
+      await applyOmiseWebhookCharge(event.data!.id!, event.id);
+      dispatchNotifications();
     } catch {
       return new Response("Reconciliation failed", { status: 500 });
     }

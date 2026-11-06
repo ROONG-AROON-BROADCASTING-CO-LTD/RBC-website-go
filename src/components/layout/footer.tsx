@@ -38,8 +38,8 @@ export function Footer() {
             links: [
               ["Help", "help"],
               ["My Bookings", "account/bookings"],
-              ["Cancellation terms", "help"],
-              ["Privacy policy", "help"],
+              ["Cancellation and refunds", "help#cancellations"],
+              ["Data and privacy", "help#privacy"],
             ],
           },
           {
@@ -62,16 +62,12 @@ export function Footer() {
           </div>
         ))}
         <div className="border-t border-white/15 pt-6 text-xs text-white/50 md:col-span-4">
-          © 2026 RBC GO · {t("Local demo · No real payments")} ·{" "}
-          {t("Sample inventory and reviews")}
+          © 2026 RBC GO
           {internal && (
             <div className="mt-3 flex flex-wrap items-center gap-4">
               <span>{t("Staff tools")}</span>
               <Link className="underline" href={href("operations/overview")}>
                 {t("Operations")}
-              </Link>
-              <Link className="underline" href={href("guide")}>
-                {t("Design guide")}
               </Link>
             </div>
           )}

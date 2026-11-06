@@ -59,6 +59,7 @@ test(
         await sql`delete from rbc_go.accounts where id = ${ids[0]} or id = ${ids[1]}`;
       else if (ids.length === 1)
         await sql`delete from rbc_go.accounts where id = ${ids[0]}`;
+      await sql.end();
     }
   },
 );

@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { appOrigin } from "@/lib/service-config";
 
 export type OmiseCharge = {
   id: string;
@@ -15,29 +16,51 @@ export class OmiseApiError extends Error {
   constructor(
     public readonly status: number,
     public readonly code: string,
+    public readonly providerMessage?: string,
   ) {
     super(`Omise error: ${code}`);
   }
 }
 
-export function omiseTestConfigured() {
-  return Boolean(
-    process.env.OMISE_PUBLIC_KEY?.startsWith("pkey_test_") &&
-    process.env.OMISE_SECRET_KEY?.startsWith("skey_test_"),
+export function omiseMode(): "test" | "live" | null {
+  if (process.env.OMISE_MODE === "live") {
+    return process.env.ENABLE_LIVE_PAYMENTS === "true" &&
+      appOrigin()?.startsWith("https://") &&
+      process.env.OMISE_PUBLIC_KEY?.startsWith("pkey_live_") &&
+      process.env.OMISE_SECRET_KEY?.startsWith("skey_live_")
+      ? "live"
+      : null;
+  }
+  return process.env.OMISE_PUBLIC_KEY?.startsWith("pkey_test_") &&
+    process.env.OMISE_SECRET_KEY?.startsWith("skey_test_")
+    ? "test"
+    : null;
+}
+export function omiseConfigured() {
+  return omiseMode() !== null;
+}
+export function isOmiseId(
+  kind: "chrg" | "tokn" | "rfnd" | "trsf" | "recp",
+  id: string,
+) {
+  const mode = omiseMode();
+  return (
+    mode !== null &&
+    new RegExp(`^${kind}_${mode === "test" ? "test_" : ""}[a-z0-9]+$`).test(id)
   );
 }
 
 function secretKey() {
   const key = process.env.OMISE_SECRET_KEY;
-  if (!key?.startsWith("skey_test_"))
-    throw new Error("Omise test key is not configured");
+  if (!key || !omiseConfigured()) throw new Error("Omise is not configured");
   return key;
 }
 
-async function omiseRequest(
+async function omiseRequest<T extends { id: string }>(
   path: string,
+  object: string,
   init?: RequestInit,
-): Promise<OmiseCharge> {
+): Promise<T> {
   const response = await fetch(`https://api.omise.co${path}`, {
     ...init,
     headers: {
@@ -51,14 +74,20 @@ async function omiseRequest(
   });
   const value = await response.json();
   if (!response.ok || value.object === "error") {
-    throw new OmiseApiError(response.status, String(value.code ?? "unknown"));
+    throw new OmiseApiError(
+      response.status,
+      String(value.code ?? "unknown"),
+      typeof value.message === "string"
+        ? value.message.slice(0, 300)
+        : undefined,
+    );
   }
-  if (value.object !== "charge" || typeof value.id !== "string")
-    throw new Error("Invalid Omise charge response");
-  return value as OmiseCharge;
+  if (value.object !== object || typeof value.id !== "string")
+    throw new Error("Invalid Omise response");
+  return value as T;
 }
 
-export async function createOmiseTestCharge(input: {
+export async function createOmiseCharge(input: {
   token: string;
   amountSatang: number;
   attemptId: string;
@@ -66,7 +95,7 @@ export async function createOmiseTestCharge(input: {
   returnUri: string;
 }) {
   if (
-    !/^tokn_test_[a-z0-9]+$/.test(input.token) ||
+    !isOmiseId("tokn", input.token) ||
     !Number.isSafeInteger(input.amountSatang) ||
     input.amountSatang < 100
   )
@@ -80,13 +109,91 @@ export async function createOmiseTestCharge(input: {
     description: `RBC GO booking ${input.bookingId}`,
     "metadata[booking_id]": input.bookingId,
   });
-  return omiseRequest("/charges", { method: "POST", body });
+  return omiseRequest<OmiseCharge>("/charges", "charge", {
+    method: "POST",
+    body,
+  });
 }
 
-export async function getOmiseTestCharge(id: string) {
-  if (!/^chrg_test_[a-z0-9]+$/.test(id))
-    throw new Error("Invalid Omise charge ID");
-  return omiseRequest(`/charges/${id}`);
+export async function getOmiseCharge(id: string) {
+  if (!isOmiseId("chrg", id)) throw new Error("Invalid Omise charge ID");
+  return omiseRequest<OmiseCharge>(`/charges/${id}`, "charge");
+}
+
+export type OmiseRefund = {
+  id: string;
+  livemode: boolean;
+  amount: number;
+  currency: string;
+  charge: string;
+  status: string;
+  metadata: { refund_id?: string };
+};
+export async function createOmiseRefund(
+  chargeId: string,
+  amount: number,
+  refundId: string,
+  reason: string,
+) {
+  if (!isOmiseId("chrg", chargeId)) throw new Error("Invalid charge");
+  return omiseRequest<OmiseRefund>(`/charges/${chargeId}/refunds`, "refund", {
+    method: "POST",
+    body: new URLSearchParams({
+      amount: String(amount),
+      reason: reason.slice(0, 255),
+      "metadata[refund_id]": refundId,
+    }),
+  });
+}
+export async function getOmiseRefund(chargeId: string, refundId: string) {
+  if (!isOmiseId("chrg", chargeId) || !isOmiseId("rfnd", refundId))
+    throw new Error("Invalid refund");
+  return omiseRequest<OmiseRefund>(
+    `/charges/${chargeId}/refunds/${refundId}`,
+    "refund",
+  );
+}
+export type OmiseRecipient = {
+  id: string;
+  livemode: boolean;
+  verified: boolean;
+  active: boolean;
+};
+export async function getOmiseRecipient(id: string) {
+  if (!isOmiseId("recp", id)) throw new Error("Invalid recipient");
+  return omiseRequest<OmiseRecipient>(`/recipients/${id}`, "recipient");
+}
+export type OmiseTransfer = {
+  id: string;
+  livemode: boolean;
+  amount: number;
+  currency: string;
+  recipient: string;
+  paid: boolean;
+  total_fee?: number;
+  net?: number;
+  failure_code: string | null;
+  metadata: { payout_id?: string };
+};
+export async function createOmiseTransfer(
+  recipient: string,
+  amount: number,
+  payoutId: string,
+) {
+  if (!isOmiseId("recp", recipient)) throw new Error("Invalid recipient");
+  return omiseRequest<OmiseTransfer>("/transfers", "transfer", {
+    method: "POST",
+    body: new URLSearchParams({
+      recipient,
+      amount: String(amount),
+      fail_fast: "true",
+      "metadata[payout_id]": payoutId,
+    }),
+  });
+}
+export async function getOmiseTransfer(id: string) {
+  if (!isOmiseId("trsf", id)) throw new Error("Invalid transfer");
+  return omiseRequest<OmiseTransfer>(`/transfers/${id}`, "transfer");
 }
 
 export function verifyOmiseWebhook(

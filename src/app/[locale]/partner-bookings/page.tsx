@@ -1,15 +1,17 @@
+import { createTranslator } from "@/lib/i18n";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { currentAccount } from "@/lib/server/auth";
 import { listCustomerPartnerBookings } from "@/lib/server/partner-bookings";
-
 export const dynamic = "force-dynamic";
-
 export default async function PartnerBookingsPage({
   params,
 }: {
-  params: Promise<{ locale: string }>;
+  params: Promise<{
+    locale: string;
+  }>;
 }) {
+  const t = createTranslator((await params).locale);
   const { locale } = await params;
   if (!process.env.DATABASE_URL) notFound();
   const account = await currentAccount();
@@ -17,9 +19,9 @@ export default async function PartnerBookingsPage({
   const bookings = await listCustomerPartnerBookings(account.id);
   return (
     <main className="mx-auto max-w-4xl px-4 py-10 md:py-14">
-      <h1 className="text-3xl font-bold">การจองพาร์ทเนอร์ของฉัน</h1>
+      <h1 className="text-3xl font-bold">{t("My Bookings")}</h1>
       <p className="mt-2 text-muted-foreground">
-        ติดตามคำขอ ราคา และสถานะการชำระเงินทดสอบ
+        {t("Track your requests, quotes and payment status.")}
       </p>
       <div className="mt-7 space-y-3">
         {bookings.map((booking) => (
@@ -30,19 +32,22 @@ export default async function PartnerBookingsPage({
           >
             <div className="flex flex-wrap justify-between gap-2">
               <h2 className="font-semibold">{booking.title}</h2>
-              <span className="text-sm">{booking.status}</span>
+              <span className="text-sm">{t(booking.status)}</span>
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
               {booking.business_name} ·{" "}
-              {booking.starts_at.toLocaleString("th-TH", {
-                timeZone: "Asia/Bangkok",
-              })}
+              {booking.starts_at.toLocaleString(
+                locale === "th" ? "th-TH" : locale === "zh" ? "zh-CN" : "en-GB",
+                {
+                  timeZone: "Asia/Bangkok",
+                },
+              )}
             </p>
           </Link>
         ))}
         {!bookings.length && (
           <p className="rounded-2xl border p-6 text-muted-foreground">
-            ยังไม่มีคำขอจอง
+            {t("No booking requests yet")}
           </p>
         )}
       </div>

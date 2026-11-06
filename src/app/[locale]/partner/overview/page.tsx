@@ -1,17 +1,25 @@
+import { createTranslator } from "@/lib/i18n";
 import { notFound, redirect } from "next/navigation";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { WorkspaceActionForm } from "@/components/customer/workspace-action-form";
 import { ListingForm } from "@/components/partner/listing-form";
 import { currentAccount } from "@/lib/server/auth";
 import { getActivePartner, getPartnerListings } from "@/lib/server/listings";
 import { listPartnerBookingRequests } from "@/lib/server/partner-bookings";
 import { respondToBooking } from "./booking-actions";
-
 export default async function PartnerOverview({
   params,
   searchParams,
 }: {
-  params: Promise<{ locale: string }>;
-  searchParams: Promise<{ bookingError?: string }>;
+  params: Promise<{
+    locale: string;
+  }>;
+  searchParams: Promise<{
+    bookingError?: string;
+  }>;
 }) {
+  const t = createTranslator((await params).locale);
   const { locale } = await params;
   const { bookingError } = await searchParams;
   if (!process.env.DATABASE_URL) notFound();
@@ -29,11 +37,26 @@ export default async function PartnerOverview({
         RBC GO PARTNERS
       </p>
       <h1 className="mt-2 text-3xl font-bold">{partner.business_name}</h1>
-      <p className="mt-2 text-muted-foreground">จัดการรายการยานพาหนะของคุณ</p>
+      <p className="mt-2 text-muted-foreground">
+        {t("Manage your vehicle listings")}
+      </p>
+      <div className="mt-5 flex flex-wrap gap-3">
+        <Button asChild variant="outline"><Link href={`/${locale}/partner/earnings`}>{t("Earnings")}</Link></Button>
+        <Button asChild variant="outline">
+          <Link href={`/${locale}/partner/availability`}>
+            {t("Availability calendar")}
+          </Link>
+        </Button>
+      </div>
       <section className="mt-8 rounded-3xl border bg-card p-6">
-        <h2 className="text-xl font-bold">คำขอจอง ({bookings.length})</h2>
+        <h2 className="text-xl font-bold">
+          {t("Booking requests (")}
+          {bookings.length})
+        </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          ตรวจสอบวันว่างแล้วเสนอราคาสุทธิให้ลูกค้า ก่อนให้ลูกค้าชำระผ่าน Omise
+          {t(
+            "Check availability and quote the final price before the customer pays through Omise.",
+          )}
         </p>
         {bookingError && (
           <p
@@ -41,10 +64,10 @@ export default async function PartnerOverview({
             className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-800"
           >
             {bookingError === "dates_unavailable"
-              ? "ช่วงเวลานี้มีการจองหรือถูกปิดแล้ว"
+              ? t("These dates are booked or blocked.")
               : bookingError === "invalid_price"
-                ? "กรุณากรอกราคาสุทธิให้ถูกต้อง"
-                : "ดำเนินการกับคำขอนี้ไม่ได้ กรุณาโหลดหน้าใหม่"}
+                ? t("Enter a valid final price.")
+                : t("This request cannot be changed. Reload the page.")}
           </p>
         )}
         <div className="mt-5 grid gap-4 lg:grid-cols-2">
@@ -53,12 +76,13 @@ export default async function PartnerOverview({
               <div className="flex items-start justify-between gap-3">
                 <h3 className="font-semibold">{booking.title}</h3>
                 <span className="rounded-full bg-secondary px-3 py-1 text-xs">
-                  {booking.status}
+                  {t(booking.status)}
                 </span>
               </div>
               <p className="mt-2 text-sm">
                 {booking.traveler_snapshot.name} ·{" "}
-                {booking.traveler_snapshot.guests} คน
+                {booking.traveler_snapshot.guests}
+                {t("guests")}
               </p>
               <p className="text-sm">
                 {booking.traveler_snapshot.email}
@@ -66,13 +90,27 @@ export default async function PartnerOverview({
                   ` · ${booking.traveler_snapshot.phone}`}
               </p>
               <p className="mt-2 text-sm">
-                {booking.starts_at.toLocaleString("th-TH", {
-                  timeZone: "Asia/Bangkok",
-                })}{" "}
+                {booking.starts_at.toLocaleString(
+                  locale === "th"
+                    ? "th-TH"
+                    : locale === "zh"
+                      ? "zh-CN"
+                      : "en-GB",
+                  {
+                    timeZone: "Asia/Bangkok",
+                  },
+                )}{" "}
                 –{" "}
-                {booking.ends_at.toLocaleString("th-TH", {
-                  timeZone: "Asia/Bangkok",
-                })}
+                {booking.ends_at.toLocaleString(
+                  locale === "th"
+                    ? "th-TH"
+                    : locale === "zh"
+                      ? "zh-CN"
+                      : "en-GB",
+                  {
+                    timeZone: "Asia/Bangkok",
+                  },
+                )}
               </p>
               {booking.traveler_snapshot.note && (
                 <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">
@@ -89,7 +127,7 @@ export default async function PartnerOverview({
                     <input type="hidden" name="bookingId" value={booking.id} />
                     <input type="hidden" name="decision" value="quote" />
                     <label className="text-sm">
-                      ค่าเช่าสุทธิ (บาท; ไม่รวมเงินประกัน)
+                      {t("Final rental price (THB, excluding deposit)")}
                       <input
                         name="amount"
                         type="number"
@@ -100,7 +138,7 @@ export default async function PartnerOverview({
                       />
                     </label>
                     <button className="h-10 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground">
-                      เสนอราคา
+                      {t("Send quote")}
                     </button>
                   </form>
                   <form action={respondToBooking} className="self-end">
@@ -108,28 +146,52 @@ export default async function PartnerOverview({
                     <input type="hidden" name="bookingId" value={booking.id} />
                     <input type="hidden" name="decision" value="decline" />
                     <button className="h-10 rounded-lg border px-4 text-sm">
-                      ไม่รับคำขอ
+                      {t("Decline request")}
                     </button>
                   </form>
                 </div>
               ) : booking.status === "held" ||
                 booking.status === "confirmed" ? (
                 <p className="mt-3 text-sm font-medium">
-                  ยอดชำระรวมเงินประกัน ฿
+                  {t("Total including deposit \u0E3F")}
                   {(Number(booking.total_satang) / 100).toLocaleString("th-TH")}
                 </p>
               ) : null}
+              <div className="mt-4 flex flex-wrap gap-3">
+                <Button asChild variant="outline">
+                  <Link href={`/${locale}/messages/${booking.id}`}>
+                    {t("Messages")}
+                  </Link>
+                </Button>
+                {booking.status === "confirmed" && (
+                  <>
+                    <WorkspaceActionForm
+                      operation="handover"
+                      values={{ bookingId: booking.id }}
+                      label="Record handover"
+                    />
+                    <WorkspaceActionForm
+                      operation="complete"
+                      values={{ bookingId: booking.id }}
+                      label="Complete booking"
+                    />
+                  </>
+                )}
+              </div>
             </article>
           ))}
           {!bookings.length && (
-            <p className="text-sm text-muted-foreground">ยังไม่มีคำขอจอง</p>
+            <p className="text-sm text-muted-foreground">
+              {t("No booking requests yet")}
+            </p>
           )}
         </div>
       </section>
       <div className="mt-8 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(340px,0.85fr)]">
         <section>
           <h2 className="mb-4 text-xl font-bold">
-            รายการยานพาหนะ ({listings.length})
+            {t("Vehicle listings (")}
+            {listings.length})
           </h2>
           <div className="space-y-3">
             {listings.map((listing) => (
@@ -145,7 +207,7 @@ export default async function PartnerOverview({
                     </p>
                   </div>
                   <span className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold">
-                    {listing.status}
+                    {t(listing.status)}
                   </span>
                 </div>
                 <p className="mt-3 text-sm">
@@ -162,7 +224,7 @@ export default async function PartnerOverview({
                 {listing.status === "changes_requested" && (
                   <details className="mt-4">
                     <summary className="cursor-pointer text-sm font-semibold text-primary">
-                      แก้ไขและส่งตรวจอีกครั้ง
+                      {t("Edit and resubmit")}
                     </summary>
                     <div className="mt-4">
                       <ListingForm locale={locale} listing={listing} />
@@ -173,7 +235,7 @@ export default async function PartnerOverview({
             ))}
             {listings.length === 0 && (
               <p className="rounded-2xl border bg-card p-6 text-muted-foreground">
-                ยังไม่มีรายการ เพิ่มยานพาหนะเพื่อส่งตรวจสอบ
+                {t("No listings yet. Add a vehicle to submit for review.")}
               </p>
             )}
           </div>

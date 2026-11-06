@@ -10,8 +10,12 @@ export async function GET() {
 
   try {
     const sql = getDb();
-    await sql`select 1`;
-    return Response.json({ status: "ok" });
+    const [schema] = await sql<
+      { version: number | null }[]
+    >`select max(version)::integer as version from rbc_go.schema_migrations`;
+    if ((schema.version ?? 0) < 11)
+      return Response.json({ status: "migration_required" }, { status: 503 });
+    return Response.json({ status: "ok", schemaVersion: schema.version });
   } catch {
     return Response.json({ status: "database_unavailable" }, { status: 503 });
   }

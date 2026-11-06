@@ -1,20 +1,18 @@
 "use client";
-
+import { useRBC } from "@/components/rbc/provider";
 import { useActionState } from "react";
 import Link from "next/link";
 import { submitBookingRequest } from "@/app/[locale]/listing/[id]/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
 const messages: Record<string, string> = {
   invalid_dates:
-    "ตรวจสอบวันและเวลาอีกครั้ง (เวลาไทย) เลือกล่วงหน้าอย่างน้อย 1 ชั่วโมง และไม่เกิน 31 วัน",
-  invalid_traveler: "ตรวจสอบชื่อ อีเมล และจำนวนผู้เดินทางอีกครั้ง",
-  dates_unavailable: "ช่วงเวลานี้ไม่ว่างแล้ว กรุณาเลือกเวลาใหม่",
-  listing_unavailable: "รายการนี้ยังไม่พร้อมรับคำขอจอง",
-  sign_in_required: "กรุณาเข้าสู่ระบบก่อนส่งคำขอจอง",
+    "Check your dates in Bangkok time. Book at least 1 hour ahead for up to 31 days.",
+  invalid_traveler: "Check your name, email and number of travelers.",
+  dates_unavailable: "These dates are unavailable. Choose another time.",
+  listing_unavailable: "This vehicle is not accepting booking requests.",
+  sign_in_required: "Sign in before requesting a booking.",
 };
-
 export function PartnerBookingForm({
   locale,
   listingId,
@@ -30,21 +28,24 @@ export function PartnerBookingForm({
     traveler_phone: string | null;
   } | null;
 }) {
+  const { t } = useRBC();
   const [state, action, pending] = useActionState(submitBookingRequest, {
     error: "",
   });
   if (!account)
     return (
       <div className="rounded-2xl border bg-card p-6">
-        <h2 className="text-xl font-semibold">ส่งคำขอจอง</h2>
+        <h2 className="text-xl font-semibold">{t("Request a booking")}</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          เข้าสู่ระบบก่อนเลือกวันและส่งคำขอให้พาร์ทเนอร์เสนอราคา
+          {t(
+            "Sign in to choose your dates and request a quote from the partner.",
+          )}
         </p>
         <Button asChild className="mt-4">
           <Link
             href={`/${locale}/email?next=${encodeURIComponent(`/${locale}/listing/${listingId}`)}`}
           >
-            เข้าสู่ระบบ
+            {t("Sign In")}
           </Link>
         </Button>
       </div>
@@ -54,14 +55,16 @@ export function PartnerBookingForm({
       <input type="hidden" name="locale" value={locale} />
       <input type="hidden" name="listingId" value={listingId} />
       <div>
-        <h2 className="text-xl font-semibold">ส่งคำขอจอง</h2>
+        <h2 className="text-xl font-semibold">{t("Request a booking")}</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          พาร์ทเนอร์จะตรวจสอบวันว่างและเสนอราคาสุทธิให้คุณก่อนชำระเงิน
+          {t(
+            "The partner will check availability and confirm your final price before payment.",
+          )}
         </p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="text-sm font-medium">
-          เริ่มใช้บริการ (เวลาไทย)
+          {t("Start (Bangkok time)")}
           <Input
             name="startsAt"
             type="datetime-local"
@@ -70,7 +73,7 @@ export function PartnerBookingForm({
           />
         </label>
         <label className="text-sm font-medium">
-          สิ้นสุด (เวลาไทย)
+          {t("End (Bangkok time)")}
           <Input
             name="endsAt"
             type="datetime-local"
@@ -81,7 +84,7 @@ export function PartnerBookingForm({
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="text-sm font-medium">
-          ชื่อผู้ติดต่อ
+          {t("Contact name")}
           <Input
             name="name"
             required
@@ -92,7 +95,7 @@ export function PartnerBookingForm({
           />
         </label>
         <label className="text-sm font-medium">
-          อีเมล
+          {t("Email")}
           <Input
             name="email"
             type="email"
@@ -102,7 +105,7 @@ export function PartnerBookingForm({
           />
         </label>
         <label className="text-sm font-medium">
-          โทรศัพท์ (ถ้ามี)
+          {t("Phone (optional)")}
           <Input
             name="phone"
             type="tel"
@@ -112,7 +115,7 @@ export function PartnerBookingForm({
           />
         </label>
         <label className="text-sm font-medium">
-          จำนวนผู้เดินทาง
+          {t("Number of travelers")}
           <Input
             name="guests"
             type="number"
@@ -125,7 +128,7 @@ export function PartnerBookingForm({
         </label>
       </div>
       <label className="block text-sm font-medium">
-        รายละเอียดเพิ่มเติม
+        {t("Additional details")}
         <textarea
           name="note"
           maxLength={1000}
@@ -135,11 +138,14 @@ export function PartnerBookingForm({
       </label>
       {state.error && (
         <p role="alert" className="text-sm text-destructive">
-          {messages[state.error] ?? "ส่งคำขอไม่สำเร็จ กรุณาลองอีกครั้ง"}
+          {t(
+            messages[state.error] ??
+              t("Unable to send the request. Please try again."),
+          )}
         </p>
       )}
       <Button type="submit" size="lg" disabled={pending} className="w-full">
-        {pending ? "กำลังส่ง..." : "ส่งคำขอจอง"}
+        {pending ? t("Sending...") : t("Request a booking")}
       </Button>
     </form>
   );

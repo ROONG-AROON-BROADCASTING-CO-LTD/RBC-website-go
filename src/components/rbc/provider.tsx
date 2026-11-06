@@ -5,16 +5,17 @@ import {
   useContext,
   useEffect,
   useState,
+  useSyncExternalStore,
   useCallback,
   type ReactNode,
   type Dispatch,
   type SetStateAction,
 } from "react";
 import { useRouter } from "next/navigation";
-import { initialState, type AppState, type Locale } from "@/lib/domain";
+import { type AppState, type Locale, type Traveler } from "@/lib/domain";
+import { createBrowserState } from "@/lib/browser-state";
 import { translate, money, formatDate } from "@/lib/i18n";
 
-const STORAGE_KEY = "rbc-go-next-v1";
 type ContextValue = {
   state: AppState;
   setState: Dispatch<SetStateAction<AppState>>;
@@ -31,46 +32,20 @@ const Context = createContext<ContextValue | null>(null);
 export function RBCProvider({
   locale,
   children,
+  initialTraveler,
 }: {
   locale: Locale;
   children: ReactNode;
+  initialTraveler?: Traveler;
 }) {
-  const [state, setState] = useState<AppState>(initialState);
-  const [ready, setReady] = useState(false);
-  const [storageError, setStorageError] = useState(false);
+  const [store] = useState(() => createBrowserState(initialTraveler));
+  const { state, ready, storageError } = useSyncExternalStore(
+    store.subscribe,
+    store.getSnapshot,
+    store.getServerSnapshot,
+  );
+  const setState = store.setState;
   const router = useRouter();
-  useEffect(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
-      if (
-        saved?.version === 1 &&
-        Array.isArray(saved.data?.bookings) &&
-        Array.isArray(saved.data?.saved)
-      ) {
-        setState({
-          ...initialState,
-          ...saved.data,
-          search: { ...initialState.search, ...saved.data.search },
-          traveler: { ...initialState.traveler, ...saved.data.traveler },
-          partner: { ...initialState.partner, ...saved.data.partner },
-        });
-      }
-    } catch {
-      setStorageError(true);
-    }
-    setReady(true);
-  }, []);
-  useEffect(() => {
-    if (ready)
-      try {
-        localStorage.setItem(
-          STORAGE_KEY,
-          JSON.stringify({ version: 1, data: state }),
-        );
-      } catch {
-        setStorageError(true);
-      }
-  }, [state, ready]);
   useEffect(() => {
     document.documentElement.lang = locale;
   }, [locale]);

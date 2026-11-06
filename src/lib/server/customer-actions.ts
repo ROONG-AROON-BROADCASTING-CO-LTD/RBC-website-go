@@ -50,6 +50,8 @@ export async function submitCustomerEmail(
   const next = String(form.get("next") ?? "");
   redirect(
     next.startsWith(`/${locale}/listing/`) ||
+      next.startsWith(`/${locale}/account/`) ||
+      next.startsWith(`/${locale}/messages/`) ||
       next.startsWith(`/${locale}/partner-bookings`)
       ? next
       : `/${locale}/account/profile`,

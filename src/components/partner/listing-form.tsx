@@ -1,5 +1,5 @@
 "use client";
-
+import { useRBC } from "@/components/rbc/provider";
 import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,23 +8,21 @@ import {
   type ListingFormResult,
 } from "@/app/[locale]/partner/overview/actions";
 import type { PartnerListing } from "@/lib/server/listings";
-
 const initial: ListingFormResult = { error: "" };
 const errors: Record<string, string> = {
-  invalid_category: "กรุณาเลือกประเภทยานพาหนะ",
-  invalid_title: "กรุณากรอกชื่อรายการ 2–200 ตัวอักษร",
-  invalid_description: "กรุณากรอกสถานที่และตรวจความยาวคำอธิบาย",
-  invalid_capacity: "จำนวนผู้โดยสารต้องอยู่ระหว่าง 1–200",
-  invalid_price: "กรุณากรอกราคาให้ถูกต้อง",
-  images_required: "กรุณาเลือกรูป 1–5 รูป",
-  images_too_large: "รูปทั้งหมดรวมกันต้องไม่เกิน 10 MB",
-  invalid_image_type: "รองรับ JPG, PNG และ WebP เท่านั้น",
-  invalid_image_size: "รูปแต่ละใบต้องไม่เกิน 5 MB",
-  invalid_image_name: "ชื่อรูปไม่ถูกต้อง",
-  invalid_listing: "ไม่พบรายการที่ต้องการแก้ไข",
-  listing_locked: "รายการนี้ไม่อยู่ในสถานะที่แก้ไขได้",
+  invalid_category: "Choose a vehicle category.",
+  invalid_title: "Enter a listing title of 2\u2013200 characters.",
+  invalid_description: "Enter a location and check the description length.",
+  invalid_capacity: "Passenger capacity must be between 1 and 200.",
+  invalid_price: "Enter a valid price.",
+  images_required: "Choose 1\u20135 images.",
+  images_too_large: "Images must not exceed 10 MB in total.",
+  invalid_image_type: "Only JPG, PNG and WebP are supported.",
+  invalid_image_size: "Each image must be 5 MB or smaller.",
+  invalid_image_name: "Invalid image name.",
+  invalid_listing: "Listing not found.",
+  listing_locked: "This listing cannot be edited in its current state.",
 };
-
 export function ListingForm({
   locale,
   listing,
@@ -32,6 +30,7 @@ export function ListingForm({
   locale: string;
   listing?: PartnerListing;
 }) {
+  const { t } = useRBC();
   const [state, action, pending] = useActionState(submitListing, initial);
   return (
     <form
@@ -41,15 +40,17 @@ export function ListingForm({
       <input type="hidden" name="locale" value={locale} />
       {listing && <input type="hidden" name="listingId" value={listing.id} />}
       <h2 className="text-xl font-bold">
-        {listing ? "แก้ไขรายการยานพาหนะ" : "เพิ่มยานพาหนะ"}
+        {listing ? t("Edit vehicle listing") : t("Add a vehicle")}
       </h2>
       <p className="text-sm text-muted-foreground">
         {listing
-          ? "แก้ข้อมูลตามคำแนะนำ แล้วส่งรายการเดิมให้ทีมงานตรวจอีกครั้ง"
-          : "รายการใหม่จะส่งให้ทีมงานตรวจสอบก่อนเผยแพร่"}
+          ? t(
+              "Update the requested details and resubmit this listing for review.",
+            )
+          : t("New listings are reviewed before publication.")}
       </p>
       <label className="block text-sm font-semibold">
-        ประเภท
+        {t("Category")}
         <select
           name="category"
           required
@@ -57,16 +58,16 @@ export function ListingForm({
           className="mt-2 h-10 w-full rounded-lg border bg-background px-3"
         >
           <option value="" disabled>
-            เลือกประเภท
+            {t("Choose a category")}
           </option>
-          <option value="boats">เรือและเรือยอชต์</option>
-          <option value="motorcycles">รถจักรยานยนต์</option>
-          <option value="cars">รถยนต์</option>
-          <option value="jets">เครื่องบินส่วนตัว</option>
+          <option value="boats">{t("Boats and yachts")}</option>
+          <option value="motorcycles">{t("Motorcycles")}</option>
+          <option value="cars">{t("Cars")}</option>
+          <option value="jets">{t("Private jets")}</option>
         </select>
       </label>
       <label className="block text-sm font-semibold">
-        ชื่อรายการ
+        {t("Listing title")}
         <Input
           name="title"
           defaultValue={listing?.title}
@@ -77,7 +78,7 @@ export function ListingForm({
         />
       </label>
       <label className="block text-sm font-semibold">
-        สถานที่
+        {t("Location")}
         <Input
           name="location"
           defaultValue={listing?.location_text}
@@ -87,7 +88,7 @@ export function ListingForm({
         />
       </label>
       <label className="block text-sm font-semibold">
-        คำอธิบาย
+        {t("Description")}
         <textarea
           name="description"
           defaultValue={listing?.description}
@@ -98,7 +99,7 @@ export function ListingForm({
       </label>
       <div className="grid gap-4 sm:grid-cols-3">
         <label className="block text-sm font-semibold">
-          จำนวนผู้โดยสาร
+          {t("Passenger capacity")}
           <Input
             name="capacity"
             defaultValue={listing?.capacity}
@@ -110,7 +111,7 @@ export function ListingForm({
           />
         </label>
         <label className="block text-sm font-semibold">
-          ราคาเริ่มต้น (บาท)
+          {t("Starting price (THB)")}
           <Input
             name="price"
             defaultValue={
@@ -126,7 +127,7 @@ export function ListingForm({
           />
         </label>
         <label className="block text-sm font-semibold">
-          เงินประกัน (บาท)
+          {t("Security deposit (THB)")}
           <Input
             name="deposit"
             type="number"
@@ -140,7 +141,7 @@ export function ListingForm({
         </label>
       </div>
       <label className="block text-sm font-semibold">
-        รูปยานพาหนะ
+        {t("Vehicle images")}
         <Input
           name="images"
           type="file"
@@ -151,21 +152,24 @@ export function ListingForm({
         />
         <span className="mt-2 block text-xs font-normal text-muted-foreground">
           {listing
-            ? "เว้นว่างเพื่อใช้รูปเดิม หรือเลือก 1–5 รูปเพื่อแทนที่ทั้งหมด; รวมไม่เกิน 10 MB"
-            : "1–5 รูป; รวมไม่เกิน 10 MB"}
+            ? t(
+                "Leave empty to keep existing images, or choose 1\u20135 replacements, up to 10 MB in total.",
+              )
+            : t("1\u20135 images, up to 10 MB in total.")}
         </span>
       </label>
       {state.error && (
         <p role="alert" className="text-sm text-destructive">
-          {errors[state.error] ?? "ส่งรายการไม่สำเร็จ กรุณาลองอีกครั้ง"}
+          {errors[state.error] ??
+            t("Unable to submit the listing. Please try again.")}
         </p>
       )}
       <Button type="submit" size="lg" disabled={pending} className="w-full">
         {pending
-          ? "กำลังส่ง..."
+          ? t("Sending...")
           : listing
-            ? "ส่งตรวจอีกครั้ง"
-            : "ส่งรายการให้ตรวจสอบ"}
+            ? t("Resubmit for review")
+            : t("Submit listing for review")}
       </Button>
     </form>
   );

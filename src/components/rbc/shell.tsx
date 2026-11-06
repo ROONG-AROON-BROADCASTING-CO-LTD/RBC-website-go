@@ -24,10 +24,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
       <Navbar />
       {storageError && (
         <div className="mx-auto max-w-7xl p-4">
-          <Notice
-            title="Local demo data is unavailable in this browser."
-            error
-          />
+          <Notice title="Your browser preferences could not be saved." error />
         </div>
       )}
       {state.currency === "USD" && (

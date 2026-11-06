@@ -30,7 +30,9 @@ function tokenHash(token: string) {
   return createHash("sha256").update(token).digest();
 }
 
-async function hashPassword(password: string) {
+export async function hashPassword(password: string) {
+  if (password.length < 12 || Buffer.byteLength(password, "utf8") > 256)
+    throw new AuthError("invalid_password");
   const salt = randomBytes(24);
   const derived = await derivePassword(password, salt);
   return `scrypt$32768$8$1$${salt.toString("base64url")}$${derived.toString("base64url")}`;
@@ -75,7 +77,7 @@ export async function createSessionRecord(accountId: string) {
   return { token, expires };
 }
 
-async function createSession(accountId: string) {
+export async function createSession(accountId: string) {
   const { token, expires } = await createSessionRecord(accountId);
   (await cookies()).set(
     sessionCookieName,
@@ -196,6 +198,9 @@ export async function currentAccount() {
     {
       id: string;
       email: string | null;
+      email_verified_at: Date | null;
+      phone_verified_at: Date | null;
+      phone_e164: string | null;
       display_name: string;
       auth_provider: string;
       traveler_name: string | null;
@@ -203,7 +208,7 @@ export async function currentAccount() {
       traveler_phone: string | null;
     }[]
   >`
-    select accounts.id, accounts.email, accounts.display_name,
+    select accounts.id, accounts.email, accounts.display_name, accounts.email_verified_at, accounts.phone_verified_at, accounts.phone_e164,
       profiles.full_name as traveler_name,
       profiles.contact_email as traveler_email,
       profiles.contact_phone as traveler_phone,

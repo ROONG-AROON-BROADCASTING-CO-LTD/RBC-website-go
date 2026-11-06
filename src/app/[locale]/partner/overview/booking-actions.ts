@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { currentAccount } from "@/lib/server/auth";
+import { dispatchNotifications } from "@/lib/server/dispatch-notifications";
 import {
   BookingError,
   decidePartnerBooking,
@@ -30,5 +31,6 @@ export async function respondToBooking(form: FormData) {
     throw error;
   }
   revalidatePath(`/${locale}/partner/overview`);
+  dispatchNotifications();
   redirect(`/${locale}/partner/overview`);
 }

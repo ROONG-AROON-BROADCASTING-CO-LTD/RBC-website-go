@@ -11,7 +11,7 @@ import { TravelerFields, travelerErrors } from "@/components/rbc/booking";
 import { saveCustomerProfile } from "@/lib/server/customer-actions";
 
 export function CustomerProfile() {
-  const { state, setState, t } = useRBC();
+  const { state, t } = useRBC();
   const { customer, openAuth, signOut } = useCustomerAuth();
   const [invalid, setInvalid] = useState(false);
   return (
@@ -32,7 +32,6 @@ export function CustomerProfile() {
                       (customer.method === "google" ? "Google" : t("Account"))}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {customer.kind === "demo" && <>{t("Demo account")} · </>}
                   {t("Signed in with")}{" "}
                   {customer.method === "phone"
                     ? t("Phone number")
@@ -84,12 +83,7 @@ export function CustomerProfile() {
                   return;
                 }
               }
-              if (customer?.kind === "demo")
-                setState((current) => ({
-                  ...current,
-                  customer: { ...customer, ...current.traveler },
-                }));
-              toast.success(t("Saved locally"));
+              openAuth("login");
             }
           }}
         >

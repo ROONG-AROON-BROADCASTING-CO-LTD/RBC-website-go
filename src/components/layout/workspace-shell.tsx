@@ -118,7 +118,7 @@ export function WorkspaceShell({
               : role === "partner"
                 ? "Own listings only"
                 : signedInAccount
-                  ? "Bookings are currently saved in this browser."
+                  ? "Your account activity is saved securely and available across devices."
                   : "Storage is local to this browser.",
           )}
         </p>

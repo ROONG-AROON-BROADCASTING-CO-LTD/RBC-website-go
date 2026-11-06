@@ -1,3 +1,4 @@
+import { createTranslator } from "@/lib/i18n";
 import { redirect } from "next/navigation";
 import { PartnerApplicationForm } from "@/components/partner/application-form";
 import { currentAccount } from "@/lib/server/auth";
@@ -7,19 +8,23 @@ import {
   getPartnerDocuments,
 } from "@/lib/server/partner-application";
 import { getActivePartner } from "@/lib/server/listings";
-
 export default async function ApplyPage({
   params,
 }: {
-  params: Promise<{ locale: string }>;
+  params: Promise<{
+    locale: string;
+  }>;
 }) {
+  const t = createTranslator((await params).locale);
   const { locale } = await params;
   if (!process.env.DATABASE_URL) {
     return (
       <main className="mx-auto max-w-2xl px-5 py-16">
-        <h1 className="text-3xl font-bold">ยังไม่ได้ตั้งค่าฐานข้อมูล</h1>
+        <h1 className="text-3xl font-bold">
+          {t("Database is not configured")}
+        </h1>
         <p className="mt-3 text-muted-foreground">
-          ตั้งค่า DATABASE_URL และรัน migration ก่อนเปิดรับสมัครพาร์ทเนอร์
+          {t("Partner registration is temporarily unavailable.")}
         </p>
       </main>
     );
@@ -35,9 +40,11 @@ export default async function ApplyPage({
     if (partner) redirect(`/${locale}/partner/overview`);
     return (
       <main className="mx-auto max-w-2xl px-5 py-16">
-        <h1 className="text-3xl font-bold">บัญชีพาร์ทเนอร์ไม่พร้อมใช้งาน</h1>
+        <h1 className="text-3xl font-bold">
+          {t("Partner account is unavailable")}
+        </h1>
         <p className="mt-3 text-muted-foreground">
-          กรุณาติดต่อทีมงานเพื่อตรวจสอบสถานะบัญชีพาร์ทเนอร์
+          {t("Contact support to check your partner account status.")}
         </p>
       </main>
     );
@@ -53,9 +60,13 @@ export default async function ApplyPage({
           <p className="text-sm font-bold tracking-widest text-primary">
             RBC GO PARTNERS
           </p>
-          <h1 className="mt-2 text-3xl font-bold">ยืนยันข้อมูลพาร์ทเนอร์</h1>
+          <h1 className="mt-2 text-3xl font-bold">
+            {t("Verify your business")}
+          </h1>
           <p className="mt-2 text-muted-foreground">
-            ส่งข้อมูลธุรกิจและเอกสาร ทีมงานจะตรวจสอบก่อนเปิดหน้าจัดการพาร์ทเนอร์
+            {t(
+              "Submit business details and documents for review before accessing the partner portal.",
+            )}
           </p>
         </div>
         <form action={logoutPartner}>
@@ -64,19 +75,20 @@ export default async function ApplyPage({
             type="submit"
             className="text-sm font-semibold text-primary hover:underline"
           >
-            ออกจากระบบ
+            {t("Sign out")}
           </button>
         </form>
       </div>
       <ol className="mb-7 grid gap-3 text-sm sm:grid-cols-3">
         <li className="rounded-2xl border bg-card p-4 font-semibold">
-          1. สร้างบัญชี ✓
+          {t("1. Account created \u2713")}
         </li>
         <li className="rounded-2xl border bg-card p-4 font-semibold">
-          2. ส่งเอกสาร {editable ? "←" : "✓"}
+          {t("2. Submit documents")}
+          {editable ? "←" : "✓"}
         </li>
         <li className="rounded-2xl border bg-card p-4 font-semibold">
-          3. รอผลการตรวจสอบ
+          {t("3. Await review")}
         </li>
       </ol>
       {editable ? (
@@ -89,13 +101,13 @@ export default async function ApplyPage({
         <div className="rounded-3xl border bg-card p-8 shadow-sm">
           <h2 className="text-xl font-bold">
             {application.status === "rejected"
-              ? "ใบสมัครไม่ผ่านการตรวจสอบ"
-              : "ส่งใบสมัครแล้ว"}
+              ? t("Application declined")
+              : t("Application submitted")}
           </h2>
           <p className="mt-2 text-muted-foreground">
             {application.status === "rejected"
-              ? "กรุณาติดต่อทีมงานหากต้องการข้อมูลเพิ่มเติม"
-              : "ทีมงานกำลังตรวจสอบข้อมูลและเอกสารของคุณ"}
+              ? t("Contact support for more information.")
+              : t("We are reviewing your details and documents.")}
           </p>
           {application.feedback && (
             <p className="mt-4 rounded-2xl bg-secondary p-4">
@@ -106,7 +118,8 @@ export default async function ApplyPage({
       )}
       {application?.status === "changes_requested" && application.feedback && (
         <p className="mt-5 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-amber-900">
-          ต้องแก้ไขข้อมูล: {application.feedback}
+          {t("Changes requested:")}
+          {application.feedback}
         </p>
       )}
     </main>

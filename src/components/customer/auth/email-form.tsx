@@ -101,6 +101,16 @@ export function CustomerEmailForm({
           </Button>
         </FieldGroup>
       </form>
+      {!registering && (
+        <p className="mt-4 text-center text-sm">
+          <Link
+            className="text-primary underline"
+            href={`/${locale}/account-access`}
+          >
+            {t("Forgot password?")}
+          </Link>
+        </p>
+      )}
       <p className="mt-5 text-center text-sm">
         {t(registering ? "Already have an account?" : "New to RBC GO?")}{" "}
         <Link

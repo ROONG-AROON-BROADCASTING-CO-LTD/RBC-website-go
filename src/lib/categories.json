@@ -1,0 +1,34 @@
+[
+  {
+    "id": "boats",
+    "name": "Boats & Yachts",
+    "icon": "boat",
+    "img": "sea",
+    "tag": "A different kind of blue",
+    "desc": "Private charters & island escapes"
+  },
+  {
+    "id": "motorcycles",
+    "name": "Motorcycles",
+    "icon": "bike",
+    "img": "bike",
+    "tag": "Take the scenic route",
+    "desc": "Scooters & open-road adventures"
+  },
+  {
+    "id": "cars",
+    "name": "Cars",
+    "icon": "car",
+    "img": "car",
+    "tag": "The freedom to go",
+    "desc": "Self-drive & chauffeur services"
+  },
+  {
+    "id": "jets",
+    "name": "Private Jets",
+    "icon": "plane",
+    "img": "jet",
+    "tag": "Above the everyday",
+    "desc": "Private charters, on your schedule"
+  }
+]

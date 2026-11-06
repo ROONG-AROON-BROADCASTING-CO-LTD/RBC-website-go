@@ -1,0 +1,10 @@
+node_modules
+.next
+.git
+.env*
+!.env.example
+tests
+QA.md
+bun.lock
+*.tsbuildinfo
+.DS_Store

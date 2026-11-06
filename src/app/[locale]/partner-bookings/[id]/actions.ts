@@ -6,6 +6,23 @@ import {
   cancelPartnerBooking,
 } from "@/lib/server/partner-bookings";
 import { payPartnerBooking } from "@/lib/server/booking-payments";
+import { refreshBookingPayment } from "@/lib/server/booking-payments";
+import { revalidatePath } from "next/cache";
+import { dispatchNotifications } from "@/lib/server/dispatch-notifications";
+
+export async function checkBookingPayment(bookingId: string, locale: string) {
+  const account = await currentAccount();
+  if (!account) return { error: "sign_in_required" };
+  try {
+    await refreshBookingPayment(account.id, bookingId);
+    dispatchNotifications();
+  } catch {
+    return { error: "payment_pending" };
+  }
+  const language = ["th", "en", "zh"].includes(locale) ? locale : "th";
+  revalidatePath(`/${language}/partner-bookings/${bookingId}`);
+  return { error: "" };
+}
 
 export async function payBookingWithOmise(bookingId: string, token: string) {
   const account = await currentAccount();
@@ -24,6 +41,7 @@ export async function payBookingWithOmise(bookingId: string, token: string) {
       token,
       baseUrl,
     );
+    dispatchNotifications();
     return { error: "", authorizeUri };
   } catch (error) {
     if (error instanceof BookingError)
@@ -37,6 +55,7 @@ export async function cancelBookingRequest(bookingId: string) {
   if (!account) return { error: "sign_in_required" };
   try {
     await cancelPartnerBooking(account.id, bookingId);
+    dispatchNotifications();
     return { error: "" };
   } catch (error) {
     if (error instanceof BookingError) return { error: error.code };

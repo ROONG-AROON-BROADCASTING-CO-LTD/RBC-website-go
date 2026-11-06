@@ -3,17 +3,20 @@ import assert from "node:assert/strict";
 import {
   addBooking,
   initialState,
-  initialSearch,
   pricing,
   quoteCanPay,
   validateDates,
-  vehicleById,
   validRoute,
   type AppState,
+  type Vehicle,
 } from "../src/lib/domain";
+import { initialSearch, vehicleById } from "./fixtures/inventory";
 const car = vehicleById("mercedes")!;
-const yacht = { ...vehicleById("azimut")!, mode: "quote" };
-const fresh = () => structuredClone(initialState);
+const yacht: Vehicle = { ...vehicleById("azimut")!, mode: "quote" };
+const fresh = () => ({
+  ...structuredClone(initialState),
+  search: { ...initialSearch },
+});
 const quoteState = (availability = false): AppState => ({
   ...fresh(),
   quote: {
@@ -83,6 +86,7 @@ test("same quote cannot be charged through a second checkout token", () => {
 });
 test("blocked dates and fleet maintenance prevent booking", () => {
   const blocked = fresh();
+  blocked.partner.blocked = ["2026-11-18"];
   blocked.search.date = "2026-11-18";
   blocked.search.returnDate = "2026-11-19";
   assert.equal(addBooking(blocked, car, "p", 1000).bookings.length, 0);
@@ -125,7 +129,7 @@ test("booked packages are copied and cannot be changed by a later search", () =>
   assert.deepEqual(next.bookings[0].search.packages, ["child-seat"]);
   assert.equal(next.bookings[0].total, 3916);
 });
-test("all public inventory can be booked instantly at a published price", () => {
+test("fixture inventory can be booked instantly at a published price", () => {
   for (const id of [
     "mercedes",
     "azimut",

@@ -1,67 +1,90 @@
-# RBC GO Next.js — Verification
+# RBC GO — Verification
 
-## ตรวจล่าสุด: Frontend และระยะห่าง — 30 ตุลาคม 2026
+ตรวจล่าสุดวันที่ 6 พฤศจิกายน 2026 (OTP อีเมลและนำ mock data ออกจากเว็บ)
 
-- ลดระยะระหว่าง section หน้าแรกเหลือ 32px บนมือถือ / 48px บนเดสก์ท็อป และลด padding ของการ์ดกับหน้า customer/partner/operations ผ่าน shared components
-- มือถือ 390 × 844: แสดงหมวดค้นหาครบ 4 หมวด ใช้สรุปการค้นหาพร้อม Sheet สำหรับแก้ไข; ตำแหน่งปุ่มค้นหาในหน้าแรกลดจากประมาณ 934px เหลือ 521px และผลค้นหารถรายการแรกลดจาก 1124px เหลือ 578px
-- ตรวจการเปลี่ยนหมวด → เปิดฟอร์มแก้ไข → ค้นหา → หน้ารายการรถ; เมนูค้นหาด้านล่างอ้างอิงหมวดจาก URL ปัจจุบัน
-- ราคาและปุ่ม “ดูรายละเอียด” แสดงครบใน mobile card; หน้าแรกเดสก์ท็อป 1280px แสดงเมนู 14px ครบ; ทั้งสองขนาดไม่เกิด horizontal overflow
-- Gallery เปิด Dialog ได้ ตรวจปุ่มก่อนหน้า/ถัดไป, ArrowLeft และ Escape; รองรับ touch swipe ในโค้ด แต่ไม่ได้ตรวจด้วยอุปกรณ์สัมผัสจริง ภาพเพิ่มเติมใช้ภาพจุดหมายที่มีอยู่และระบุชื่อจุดหมายกำกับ
-- เพิ่มคำแปลเมนูบัญชีและแยกลิงก์เครื่องมือทีมงานออกจาก Footer ลูกค้า
-- Production build รวม TypeScript ผ่าน; ESLint ของไฟล์ที่แก้ผ่าน; ชุดทดสอบ 23/23 ผ่าน รวม 3 กรณีใหม่สำหรับหมวดค้นหาตาม URL
-- การรัน ESLint ครอบทั้งโฟลเดอร์พบข้อผิดพลาดเดิม 2 จุดใน `rbc/provider.tsx` เรื่อง setState ภายใน effect ซึ่งอยู่นอกการแก้ไขครั้งนี้
+## ผลตรวจที่ทำแล้ว
 
-## ตรวจล่าสุด: จองทันทีและ Payment Gateway จำลอง
+- ESLint, TypeScript และ production build ผ่าน หลังแก้การเก็บ state ใน effect และการเรียกเวลาใน render ไม่มีการปิดกฎ lint
+- Integration tests ผ่าน 40/40 ไม่ข้ามกรณี ตั้งฐานทดสอบให้ตรง migration ก่อนทดสอบทุกครั้ง
+- ทดสอบ PostgreSQL จริง: บัญชี/session, profile แยกบัญชี, ใบสมัคร/เอกสาร, การตรวจและแก้รายการ, รูป public/private และระงับพาร์ทเนอร์
+- ทดสอบ booking → quote → payment reconciliation, การป้องกันเวลาทับ และการเข้าถึงข้อมูลของบัญชีอื่น
+- ทดสอบ saved listings แยกบัญชี, ข้อความคงอยู่หลังโหลดใหม่, การปฏิเสธผู้ไม่มีสิทธิ์, วันปิดรับจอง, handover/completion และรีวิวหนึ่งครั้งหลัง completed
+- ทดสอบ refund/payout: สิทธิ์ admin, ไม่คืนเกินยอด/เงินประกัน, ไม่ส่งคืนเงินหรือ payout ซ้ำ, หัก commission ที่กำหนดชัดเจน, ไม่ย้อน paid จาก event เก่า และ webhook event deduplication
+- ทดสอบลิงก์ยืนยันอีเมลและ reset แบบใช้ครั้งเดียว การยกเลิก sessions เก่า รวมถึง OTP อีเมลลูกค้าและพาร์ทเนอร์: รหัสผิด, หมดอายุ, ใช้ซ้ำ, ลองรหัสครบ 5 ครั้ง, จำกัดส่งซ้ำ, ส่งไม่สำเร็จ และป้องกันการเชื่อมบัญชี Google โดยอัตโนมัติ
+- ทดสอบ schema ของ Docker compose ผ่าน; ตรวจ Git diff ไม่มี whitespace error
 
-- เส้นทางลูกค้า: ข้อมูลการจอง → เพิ่มแพ็กเกจ → เลือกช่องทางชำระ → Gateway → ยืนยันการจอง โดยไม่ต้องขอใบเสนอราคา
-- TypeScript และ ESLint ของไฟล์ที่แก้: ผ่าน; production build ผ่าน; ชุดทดสอบ 20/20 ผ่าน
-- เบราว์เซอร์ Chrome: กรอกข้อมูลไม่ครบถูกป้องกัน, เลือกเบาะนั่งเด็ก +300 บาท แล้วยอดรวมเปลี่ยน 3,595 → 3,916 บาทตรงกับ Gateway และใบยืนยัน
-- ทดสอบบัตรจำลองไม่สำเร็จ → ลองใหม่ → สำเร็จ และ PromptPay จำลอง → Paid / Confirmed
-- ตรวจหน้าต่าง Gateway บนมือถือ 390 × 844: ไม่มี horizontal overflow; ช่องกรอกและปุ่มชำระมองเห็นครบ
-- แถบด้านบนถูกนำออก เมนูหลักใช้ 14px; เพิ่มสีดาวรีวิวและการ์ด; ปุ่มหัวใจอยู่บนรูปไม่ทับคะแนน; ผลค้นหาจัดระยะกระชับ; ปุ่มจองอยู่ใน footer ของกรอบ ไม่ถูกตัด
-- ยังเป็นเดโม ไม่มีการเชื่อม Payment Gateway จริง ไม่มีการเก็บข้อมูลบัตรทดสอบหรือเรียกเก็บเงินจริง
+## Omise sandbox จริง
 
-## Login / Register ลูกค้า
+ใช้ test keys ของโครงการและข้อมูลทดสอบเท่านั้น ไม่ใช้ live key ไม่เรียกเก็บหรือโอนเงินจริง:
 
-- เปิดหน้าต่างสมัครสมาชิก/เข้าสู่ระบบจาก Navbar และจากปุ่มบัญชีบนมือถือ
-- ทดสอบเบอร์ไม่ถูกต้องและ OTP ผิด → แสดง error; OTP สาธิต 123456 → เข้าสู่บัญชีสำเร็จ
-- ตรวจการคงสถานะหลังรีเฟรช, ข้อมูลโปรไฟล์ และออกจากระบบ
-- Google OAuth เชื่อมต่อแล้วและทดสอบด้วยบัญชีที่เพิ่มใน Google Cloud Audience; อีเมลใช้บัญชีใน PostgreSQL
-- Production build และ TypeScript ผ่าน; ESLint ของไฟล์ที่แก้ผ่าน; ทดสอบทั้งหมด 20 กรณีผ่าน
+1. ตรวจ account API สำเร็จ (HTTP 200)
+2. สร้าง token ด้วยบัตรทดสอบผ่าน vault API
+3. ส่ง charge 500 บาทผ่านฟังก์ชันชำระของแอป ยืนยันสถานะ booking จาก API จริง
+4. พยายามชำระ booking เดิมอีกครั้งและถูกป้องกัน
+5. ส่งคำขอยกเลิกและคืนเงิน 500 บาทผ่าน Refund API จริง ได้สถานะสำเร็จ
+6. ทดสอบ payout 450 บาทจากค่าเช่า 500 บาท โดยใช้อัตรา commission ทดสอบ 1,000 bps เฉพาะ process ทดสอบ ไม่ได้ตั้งอัตราธุรกิจลง environment
+7. ใช้ผู้รับเริ่มต้นที่ active/verified ในบัญชี sandbox; ใช้ test-only endpoints ของ Omise เปลี่ยน sent → paid แล้วอ่าน transfer กลับผ่านแอป สถานะ paid ค่าธรรมเนียม และยอดสุทธิบันทึกใน PostgreSQL
 
-## บันทึกการตรวจเวอร์ชันก่อนหน้า
+ไม่ได้ยืนยันการเปิดสิทธิ์ third-party payouts หรือ bank recipients ของ production บัญชีผู้รับจริงต้องตรวจ/เปิดใช้งานกับผู้ให้บริการก่อนลงทะเบียนในแอป
 
-ตรวจสอบวันที่ 29 ตุลาคม 2026
+## การตรวจผ่านเบราว์เซอร์
 
-## Build และตรรกะ
+ใช้ Playwright + Chromium กับ `http://localhost:3102` และฐาน `rbc_go_test` เพราะ Browser plugin ไม่มีในเซสชัน
 
-- `npm run build`: ผ่าน — Next.js 16.4.3 / Webpack production build
-- TypeScript: ผ่านระหว่าง build และ `tsc --noEmit`
-- `npm test`: 11/11 ผ่าน (ราคา, วันที่, ชำระซ้ำ, ใบเสนอราคาหมดอายุ, จ่ายใบเสนอราคาเดิมซ้ำ, pending/confirmed, วันปิดรับจอง, fleet maintenance, snapshot และ route ที่ไม่ถูกต้อง)
-- `npm audit --omit=dev`: ไม่พบช่องโหว่ของ production dependencies ณ เวลาตรวจ
-- มี warning ของ Webpack disk cache ใน sandbox นี้ แต่การ compile, type checking และ production server สำเร็จ
+ตรวจ desktop 1440 × 1000 และ mobile 390 × 844:
 
-## เส้นทางที่ทดลองผ่านเบราว์เซอร์
+- URL/title เป็น RBC GO, หน้าไม่ว่าง ไม่มี framework error overlay และไม่พบ console error
+- หน้าแรกแสดงรายการพาร์ทเนอร์จริง ไม่มีรายการหรือ checkout สาธิตเมื่อ `ENABLE_DEMO=false`
+- Email login ผ่านฟอร์มจริง → กลับ listing เดิม → ส่งคำขอจอง → ยืนยันในฐานข้อมูลว่าสร้างเพียงรายการเดียว
+- พาร์ทเนอร์เข้าด้วย server session → เสนอราคา → ลูกค้าเห็น Awaiting payment และยอดรวมเงินประกัน
+- ส่งข้อความ → โหลดใหม่ → ยังพบข้อความเดิม
+- บันทึกยานพาหนะ → เปิด Saved items → พบรายการจากฐานข้อมูล
+- ปิดวันรับจองจากฟอร์มจริง → พบช่วงเวลาที่บันทึกแล้ว
+- ตรวจหน้าจองไทย อังกฤษ และจีนตัวย่อ
+- มือถือหน้าบัญชีไม่มี horizontal overflow; ปุ่มและข้อมูลการจองมองเห็นครบ
 
-ใช้ in-app browser ของ Codex กับ production server ในเครื่อง ข้อมูลทดสอบอยู่คนละ origin จากหน้า preview เดิม
+ภาพหลักฐานอยู่ในไฟล์ชั่วคราวนอก repository เพื่อไม่ให้ปะปนกับซอร์ส ทดสอบเสร็จล้างข้อมูล fixture ของบัญชีและรายการที่สร้างเอง
 
-1. Cars → Search → Mercedes-Benz → ตรวจวันว่าง → Checkout → กรอกผู้เดินทาง → ยอมรับเงื่อนไข → จำลองชำระล้มเหลว → ยืนยันว่าข้อมูลยังอยู่ → ลองใหม่ → Paid + Confirmed
-2. ขอราคา Azimut → ส่งรายละเอียด → รับใบเสนอราคา → ยอมรับ → ชำระ → Paid + Awaiting confirmation → Operations ยืนยันวันว่าง → Confirmed
-3. สมัครพาร์ตเนอร์และเลือกไฟล์ตัวอย่าง → Pending approval → สร้างรายการครบ 8 ขั้นตอน → ส่งตรวจ → ลองอนุมัติรายการก่อนพาร์ตเนอร์และถูกป้องกัน → อนุมัติพาร์ตเนอร์ → อนุมัติรายการสำเร็จ
-4. เปิดตัวกรองมือถือ → ตั้งราคาสูงสุด → จำนวนผลค้นหาเปลี่ยน → แสดง empty state ถูกต้อง
-5. ตรวจหน้าไทยและอังกฤษ และการเก็บข้อมูลตัวอย่างข้ามหน้าในเบราว์เซอร์
+## สำรองและกู้ข้อมูล
 
-## Responsive และภาพ
+- สร้าง custom-format dump ด้วยสคริปต์ backup จากฐานทดสอบจริง
+- ตรวจอ่านด้วย pg_restore สำเร็จ
+- กู้ลงฐานชั่วคราว `rbc_go_restore_*_test` สำเร็จ ตรวจ schema/tables/migration แล้วลบเฉพาะฐานชั่วคราวที่สร้างเอง
+- ไฟล์ backup ตั้งสิทธิ์ 600; connection password อยู่ใน environment ของ process ไม่อยู่ใน command line
 
-- 390 px: ตรวจหน้าแรก, ค้นหา, รายละเอียดยานพาหนะ, checkout, request, quote, confirmation, account, application, wizard, partner, operations และ guide
-- 1440 px: ตรวจหน้าแรก, ค้นหา, รายละเอียด, checkout, account, partner, operations และ guide
-- พบและแก้ horizontal overflow ของ workspace บนมือถือ ตรวจซ้ำ account/partner/operations แล้ว document width = viewport width = 390
-- ตารางภายในพื้นที่ปฏิบัติการเลื่อนแนวนอนได้ โดยไม่ทำให้ทั้งหน้าล้น
-- ภาพตัวอย่างสุดท้าย: desktop 1414×749 และ mobile 390×844 (การตรวจ layout ใช้ 1440 และ 390 px)
-- ไม่พบ console error/warning จากแอปใน production browser ระหว่างการตรวจชุดสุดท้าย
+## สิ่งที่ยังตรวจ/เปิดจริงไม่ได้
 
-## ข้อจำกัดการตรวจ
+- อีเมล: ตั้ง Gmail ผู้ส่ง/App Password แล้ว ตรวจ TLS และ SMTP authentication กับ Gmail จริงผ่าน ส่งอีเมลทดสอบผ่าน adapter ของโปรเจกต์กลับเข้าบัญชีผู้ส่งเองสำเร็จ (SMTP accepted) และเจ้าของบัญชียืนยันได้รับจริงแล้ว ยังไม่ได้ทดสอบรับ OTP/verification/reset/notification ทุกชนิดผ่านกล่องจดหมายจริง การทดสอบ business flows ใน integration จำลองเฉพาะขอบเขต provider
+- SMS: ผู้ใช้เลือกใช้อีเมลแทนแล้ว หน้าล็อกอินเปลี่ยนเป็น OTP อีเมล ไม่ต้องตั้ง Twilio และไม่ทำเครื่องหมายว่าเบอร์ได้รับการยืนยัน adapter SMS เดิมเก็บไว้สำหรับ compatibility/การทดสอบ
+- Google OAuth: โค้ดตรวจ token/state ผ่านการทดสอบ แต่ไม่ได้เข้า Google Cloud Console เพื่อตรวจ Audience/Publishing ของโดเมน production ในรอบนี้
+- โฮสต์/โดเมนและ certificate จริงยังไม่มีปลายทางให้ deploy ไม่ได้ทดสอบ public webhook delivery หรือ live payments
+- Docker daemon เริ่มไม่สำเร็จ และการอ่าน UI Docker timeout จึงยังไม่ได้ยืนยัน image build/runtime ใน container; standalone server ตรวจแยกในเครื่อง
+- ยังไม่ตั้งอัตรา commission จริง นโยบายธุรกิจ เอกสารข้อกำหนด/ความเป็นส่วนตัวที่เจ้าของอนุมัติ หรือบัญชีรับเงินพาร์ทเนอร์จริง
+- ไม่ได้ทดสอบทุก browser/OS หรืออุปกรณ์สัมผัสจริง
 
-- เป็น demo ในเครื่อง ไม่มีการทดสอบฐานข้อมูล auth จริง การอัปโหลดขึ้นเซิร์ฟเวอร์ การรับเงินจริง หรือ webhook
-- ไม่ได้ทดสอบทุกเบราว์เซอร์และทุกระบบปฏิบัติการ
-- เอกสารและภาพที่เลือกในฟอร์มเก็บเพียงชื่อไฟล์ การอนุมัติและชำระเงินทุกขั้นตอนเป็น simulation
+ใช้ `npm run setup:check` ดู environment ที่ยังขาด และดูขั้นตอนเปิดบริการใน README ก่อน release
+
+
+## ผลตรวจเพิ่มเติม: OTP อีเมล 6 พฤศจิกายน 2026
+
+- `npm run lint`, `npm run typecheck` และ production build ผ่าน; integration กับ PostgreSQL ทดสอบแยกผ่าน 39/39 ไม่ข้ามกรณี
+- `npm audit --omit=dev` ไม่พบช่องโหว่ใน runtime dependencies ณ รอบตรวจนี้
+- migration 012 ติดตั้งแล้วทั้งฐานทดสอบและฐานพัฒนา; ลบบัญชี/challenge ทดสอบที่สร้างเพิ่มเองแล้ว
+- HTTP QA บน standalone production server `http://localhost:3102/th` ใช้ฐาน `_test` และ provider จำลองเฉพาะที่อยู่ `example.test`: สร้าง cookie challenge แบบ HttpOnly/Secure, ไม่สร้าง session เมื่อรหัสผิด, สร้าง session เมื่อรหัสถูกต้อง, เปิดโปรไฟล์ของบัญชีนั้นได้ และปฏิเสธรหัสที่ใช้แล้ว ไม่มีการส่งอีเมลออกจริง
+- Browser plugin ไม่พร้อมใช้งาน ตรวจผ่าน Chrome ด้วย Computer Use: URL/title ตรง, หน้าล็อกอินแสดงช่องอีเมลและปุ่มส่งรหัสภาษาไทย ไม่พบ framework overlay ใน accessibility state แรก การตรวจการกดปุ่มบนหน้าจอหยุดเพราะเครื่องมือแจ้งว่า Chrome ถูกผู้ใช้เปลี่ยนระหว่างทำงาน จึงยังไม่ยืนยัน interaction, console, screenshot หรือ mobile ของหน้าที่ปรับในรอบนี้
+- `setup:check` ผ่านค่าผู้ส่งอีเมลทั้งหมดและไม่เรียกร้อง Twilio แล้ว; ค่าที่ยังขาดคือ commission ซึ่งเป็นนโยบายธุรกิจคนละส่วนกับอีเมล APP_BASE_URL ยังเป็น localhost ต้องตั้ง HTTPS origin จริงก่อนใช้ลิงก์กู้รหัสผ่านจากนอกเครื่อง
+
+- ตรวจการเชื่อมต่อผู้ส่งจริงเพิ่มเติม: Gmail TLS port 465 และ authentication ผ่าน ส่งอีเมลทดสอบ 1 ฉบับเข้าบัญชีผู้ส่งเองผ่าน `sendTransactionalEmail` ได้รับ SMTP accepted; ไม่ได้พิมพ์ secret หรือเพิ่มผู้รับอื่น เจ้าของบัญชียืนยันได้รับอีเมลจริงในแชตแล้ว
+- เว็บพัฒนาที่ `http://localhost:3000`: `/api/health` และ `/th` ตอบ HTTP 200; server-rendered props ระบุ `emailOtpEnabled=true` หลังบันทึกค่าผู้ส่งใหม่ ไม่พบ error document ในผลตอบกลับ
+
+
+## นำ mock data ออกจากเว็บ
+
+- ย้ายรถตัวอย่าง 7 รายการจาก `src/lib/inventory.json` ไป `tests/fixtures` แอปเก็บเพียงหมวดหมู่ใน `src/lib/categories.json` และใช้รายการที่อนุมัติจาก PostgreSQL
+- หน้าแรก/ค้นหาไม่มี fallback ไปยังตัวอย่างรถ รีวิว หรือราคาเดโม ตัดการนำเข้าหน้าเดโมออกจาก router และไม่ใช้ `ENABLE_DEMO` ใน runtime อีก แม้ deployment เก่าจะตั้งเป็น true
+- ล้าง seed วันปิดรับจองและวันที่ค้นหาตัวอย่าง เปลี่ยน browser storage เป็น preferences v2 ซึ่งเก็บเฉพาะ search/currency; อ่าน v1 เพื่อย้าย preferences แล้วลบข้อมูลเดโมเก่า ไม่กู้บัญชี การจอง ข้อความ และรายการบันทึกจำลองกลับมา
+- ตรวจฐานพัฒนาแบบ read-only: รถ/พาร์ทเนอร์/ใบสมัคร/การจอง/การรับชำระ/การคืนเงิน/payout/ข้อความ/รีวิว/รายการบันทึกเป็น 0 ไม่พบบัญชีทดสอบที่รู้จัก มีบัญชีผู้ใช้ 2 บัญชีและ sessions เดิมซึ่งคงไว้ ไม่มีการล้างฐานหรือแก้ข้อมูลผู้ใช้จริง
+- คงโค้ด Omise, การรับชำระ, คืนเงิน และ payout ตามที่ผู้ใช้ยืนยัน ไม่เปิด live payments และไม่เรียกเก็บเงินจริงในรอบนี้
+- ESLint, TypeScript และ production build ผ่าน ชุดทดสอบปัจจุบันผ่าน 40/40 ไม่ข้ามกรณี รวมการปฏิเสธข้อมูลเดโมจาก storage, authorization, booking/payment/refund/payout และการแสดงเฉพาะรายการอนุมัติ ทดสอบเส้นทางเดโมโดยตั้ง ENABLE_DEMO=true เฉพาะ process ทดสอบเพื่อยืนยันว่าเปิดกลับไม่ได้
+- HTTP QA ที่ `http://localhost:3000`: หน้าแรกและหน้าค้นหาทั้ง 4 หมวดตอบ 200 พร้อม empty state; vehicle/azimut, checkout/mercedes, experiences และ guide แสดงหน้า not-found ไม่มีข้อมูลตัวอย่าง (Next.js อาจส่ง HTTP 200 เมื่อ streaming เริ่มแล้ว จึงตรวจเนื้อหา 404 และ not-found ร่วมด้วย)
+- การตรวจรอบนี้ยืนยันผลตอบกลับ HTTP และพฤติกรรม storage ผ่าน tests ยังไม่ได้ตรวจภาพหน้าจอ console หรือ interaction บนมือถือใหม่

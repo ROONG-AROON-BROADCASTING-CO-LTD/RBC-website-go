@@ -1,1 +1,1 @@
-export const ownIds = ["azimut", "andaman"];
+export const ownIds: string[] = [];

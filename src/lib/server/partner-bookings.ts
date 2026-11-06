@@ -30,7 +30,27 @@ export type PartnerBooking = {
   created_at: Date;
 };
 
-function parseBangkokDateTime(value: string) {
+export function partnerBookingPaymentAvailability(
+  booking: PartnerBooking,
+  paymentState: string | null,
+) {
+  const expired =
+    booking.hold_expires_at !== null &&
+    booking.hold_expires_at.getTime() <= Date.now();
+  return {
+    displayStatus:
+      booking.status === "held" && !paymentState && expired
+        ? "expired"
+        : booking.status,
+    canPay:
+      booking.status === "held" &&
+      !paymentState &&
+      booking.hold_expires_at !== null &&
+      !expired,
+  };
+}
+
+export function parseBangkokDateTime(value: string) {
   if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value))
     throw new BookingError("invalid_dates");
   const date = new Date(`${value}:00+07:00`);
@@ -234,6 +254,8 @@ export async function decidePartnerBooking(
         and bookings.status = 'requested' for update of bookings
     `;
       if (!booking) throw new BookingError("booking_locked");
+      // Serialize changes to availability blocks and quotes for this vehicle.
+      await tx`select id from rbc_go.listings where id = ${booking.listing_id} for update`;
       if (booking.starts_at.getTime() <= Date.now())
         throw new BookingError("dates_unavailable");
       if (decision === "decline") {

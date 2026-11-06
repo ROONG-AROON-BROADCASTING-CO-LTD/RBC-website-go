@@ -1,10 +1,10 @@
+import { createTranslator } from "@/lib/i18n";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { currentAccount } from "@/lib/server/auth";
 import { getDb } from "@/lib/server/db";
 import { reviewSubmittedListing } from "./actions";
-
 type ListingRow = {
   id: string;
   title: string;
@@ -16,21 +16,29 @@ type ListingRow = {
   deposit_satang: string;
   business_name: string;
 };
-
 export default async function ListingReviews({
   params,
   searchParams,
 }: {
-  params: Promise<{ locale: string }>;
-  searchParams: Promise<{ error?: string }>;
+  params: Promise<{
+    locale: string;
+  }>;
+  searchParams: Promise<{
+    error?: string;
+  }>;
 }) {
+  const t = createTranslator((await params).locale);
   const { locale } = await params;
   const { error } = await searchParams;
   if (!process.env.DATABASE_URL) notFound();
   const account = await currentAccount();
   if (!account) redirect(`/${locale}/partner-login`);
   const sql = getDb();
-  const [staff] = await sql<{ role: string }[]>`
+  const [staff] = await sql<
+    {
+      role: string;
+    }[]
+  >`
     select role from rbc_go.staff_members where account_id = ${account.id}
       and role in ('admin', 'reviewer')
   `;
@@ -44,7 +52,12 @@ export default async function ListingReviews({
     where listings.status = 'submitted'
     order by listings.created_at asc
   `;
-  const images = await sql<{ listing_id: string; id: string }[]>`
+  const images = await sql<
+    {
+      listing_id: string;
+      id: string;
+    }[]
+  >`
     select images.listing_id, images.id from rbc_go.listing_images images
     join rbc_go.listings listings on listings.id = images.listing_id
     where listings.status = 'submitted'
@@ -55,25 +68,34 @@ export default async function ListingReviews({
       <p className="text-sm font-bold tracking-widest text-primary">
         RBC GO OPERATIONS
       </p>
-      <h1 className="mt-2 text-3xl font-bold">ตรวจรายการยานพาหนะ</h1>
+      <h1 className="mt-2 text-3xl font-bold">
+        {t("Review vehicle listings")}
+      </h1>
       <nav className="mt-4 flex gap-4 text-sm font-semibold">
+        <Link
+          href={`/${locale}/operations/payments`}
+          className="text-primary hover:underline"
+        >
+          {t("Payments and settlements")}
+        </Link>
         <Link
           href={`/${locale}/operations/partners`}
           className="text-primary hover:underline"
         >
-          ใบสมัครพาร์ทเนอร์
+          {t("Partner applications")}
         </Link>
-        <span>รายการยานพาหนะ</span>
+        <span>{t("Vehicle listings")}</span>
       </nav>
       <p className="mt-5 text-muted-foreground">
-        {listings.length} รายการรอตรวจสอบ
+        {listings.length}
+        {t("awaiting review")}
       </p>
       {error && (
         <p
           role="alert"
           className="mt-4 rounded-2xl bg-destructive/10 p-4 text-destructive"
         >
-          ดำเนินการไม่สำเร็จ กรุณาตรวจข้อมูล
+          {t("Please check your details and try again.")}
         </p>
       )}
       <div className="mt-7 space-y-5">
@@ -89,11 +111,13 @@ export default async function ListingReviews({
             </p>
             <p className="mt-3 text-sm">{listing.description}</p>
             <p className="mt-2 text-sm">
-              ผู้โดยสาร {listing.capacity} คน · ราคา ฿
+              {t("Passengers")}
+              {listing.capacity}
+              {t("guests \u00B7 Price \u0E3F")}
               {(Number(listing.base_price_satang) / 100).toLocaleString(
                 "th-TH",
               )}{" "}
-              · ประกัน ฿
+              {t("\u00B7 Deposit \u0E3F")}
               {(Number(listing.deposit_satang) / 100).toLocaleString("th-TH")}
             </p>
             <div className="mt-4 flex gap-2 overflow-x-auto">
@@ -118,13 +142,13 @@ export default async function ListingReviews({
               <input type="hidden" name="locale" value={locale} />
               <input type="hidden" name="listingId" value={listing.id} />
               <label className="block text-sm font-semibold">
-                หมายเหตุถึงพาร์ทเนอร์
+                {t("Feedback for the partner")}
                 <textarea
                   name="feedback"
                   rows={3}
                   maxLength={2000}
                   className="mt-2 w-full rounded-xl border bg-background p-3 text-sm"
-                  placeholder="กรอกเหตุผลเมื่อขอแก้ไข"
+                  placeholder={t("Explain the changes required.")}
                 />
               </label>
               <div className="flex gap-2">
@@ -134,7 +158,7 @@ export default async function ListingReviews({
                   value="approved"
                   className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
                 >
-                  อนุมัติรายการ
+                  {t("Approve listing")}
                 </button>
                 <button
                   type="submit"
@@ -142,7 +166,7 @@ export default async function ListingReviews({
                   value="changes_requested"
                   className="rounded-xl border px-4 py-2 text-sm font-semibold"
                 >
-                  ขอแก้ไข
+                  {t("Request changes")}
                 </button>
               </div>
             </form>
@@ -150,7 +174,7 @@ export default async function ListingReviews({
         ))}
         {listings.length === 0 && (
           <p className="rounded-3xl border bg-card p-8 text-center text-muted-foreground">
-            ไม่มีรายการรอตรวจสอบ
+            {t("No listings awaiting review")}
           </p>
         )}
       </div>

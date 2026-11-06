@@ -66,12 +66,35 @@ test(
 
       const search = await fetch(`${baseUrl}/en/search/boats`);
       assert.equal(search.status, 200);
-      assert.match(await search.text(), new RegExp(title));
+      const searchHtml = await search.text();
+      assert.match(searchHtml, new RegExp(title));
+      assert.doesNotMatch(
+        searchHtml,
+        /Blue Horizon Yachts|Azimut 55|Siam Premium Cars/,
+      );
+      for (const path of [
+        "vehicle/azimut",
+        "checkout/mercedes",
+        "experiences",
+        "guide",
+      ]) {
+        const retired = await fetch(`${baseUrl}/en/${path}`);
+        // Next.js keeps HTTP 200 when notFound() runs after streaming starts.
+        assert.ok([200, 404].includes(retired.status));
+        const retiredHtml = await retired.text();
+        assert.match(retiredHtml, /404 · RBC GO/);
+        assert.match(retiredHtml, /Page not found/);
+        assert.doesNotMatch(
+          retiredHtml,
+          /Blue Horizon Yachts|Azimut 55|Siam Premium Cars/,
+        );
+      }
       const detail = await fetch(`${baseUrl}/en/listing/${published.id}`);
       assert.equal(detail.status, 200);
       const detailHtml = await detail.text();
       assert.match(detailHtml, new RegExp(title));
-      assert.match(detailHtml, /Booking coming soon/);
+      assert.match(detailHtml, /Request a booking/);
+      assert.match(detailHtml, /\/en\/email\?next=/);
       assert.equal(
         (await fetch(`${baseUrl}/api/listing-images/${publicImageId}`)).status,
         200,

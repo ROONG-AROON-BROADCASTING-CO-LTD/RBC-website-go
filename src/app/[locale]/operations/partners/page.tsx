@@ -1,9 +1,9 @@
+import { createTranslator } from "@/lib/i18n";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { currentAccount } from "@/lib/server/auth";
 import { getDb } from "@/lib/server/db";
 import { reviewApplication } from "./actions";
-
 type ApplicationRow = {
   id: string;
   business_name: string;
@@ -13,21 +13,29 @@ type ApplicationRow = {
   display_name: string;
   email: string | null;
 };
-
 export default async function PartnerReviews({
   params,
   searchParams,
 }: {
-  params: Promise<{ locale: string }>;
-  searchParams: Promise<{ error?: string }>;
+  params: Promise<{
+    locale: string;
+  }>;
+  searchParams: Promise<{
+    error?: string;
+  }>;
 }) {
+  const t = createTranslator((await params).locale);
   const { locale } = await params;
   const { error } = await searchParams;
   if (!process.env.DATABASE_URL) notFound();
   const account = await currentAccount();
   if (!account) redirect(`/${locale}/partner-login`);
   const sql = getDb();
-  const [staff] = await sql<{ role: string }[]>`
+  const [staff] = await sql<
+    {
+      role: string;
+    }[]
+  >`
     select role from rbc_go.staff_members where account_id = ${account.id}
       and role in ('admin', 'reviewer')
   `;
@@ -42,7 +50,11 @@ export default async function PartnerReviews({
     order by applications.submitted_at asc
   `;
   const documentRows = await sql<
-    { application_id: string; id: string; file_name: string }[]
+    {
+      application_id: string;
+      id: string;
+      file_name: string;
+    }[]
   >`
     select documents.application_id, documents.id, documents.file_name
     from rbc_go.partner_documents documents
@@ -55,25 +67,34 @@ export default async function PartnerReviews({
       <p className="text-sm font-bold tracking-widest text-primary">
         RBC GO OPERATIONS
       </p>
-      <h1 className="mt-2 text-3xl font-bold">ตรวจใบสมัครพาร์ทเนอร์</h1>
+      <h1 className="mt-2 text-3xl font-bold">
+        {t("Review partner applications")}
+      </h1>
       <nav className="mt-4 flex gap-4 text-sm font-semibold">
-        <span>ใบสมัครพาร์ทเนอร์</span>
+        <Link
+          href={`/${locale}/operations/payments`}
+          className="text-primary hover:underline"
+        >
+          {t("Payments and settlements")}
+        </Link>
+        <span>{t("Partner applications")}</span>
         <Link
           href={`/${locale}/operations/listings`}
           className="text-primary hover:underline"
         >
-          รายการยานพาหนะ
+          {t("Vehicle listings")}
         </Link>
       </nav>
       <p className="mt-2 text-muted-foreground">
-        {applications.length} รายการรอตรวจสอบ
+        {applications.length}
+        {t("awaiting review")}
       </p>
       {error && (
         <p
           role="alert"
           className="mt-5 rounded-2xl bg-destructive/10 p-4 text-destructive"
         >
-          ดำเนินการไม่สำเร็จ กรุณาตรวจข้อมูลและลองอีกครั้ง
+          {t("Please check your details and try again.")}
         </p>
       )}
       <div className="mt-7 space-y-5">
@@ -92,11 +113,11 @@ export default async function PartnerReviews({
                 </p>
               </div>
               <span className="rounded-full bg-amber-100 px-3 py-1 text-sm font-medium text-amber-900">
-                {application.status}
+                {t(application.status)}
               </span>
             </div>
             <div className="mt-5">
-              <p className="text-sm font-semibold">เอกสาร</p>
+              <p className="text-sm font-semibold">{t("Documents")}</p>
               <ul className="mt-2 space-y-2 text-sm">
                 {documentRows
                   .filter(
@@ -127,13 +148,15 @@ export default async function PartnerReviews({
                 value={application.id}
               />
               <label className="block text-sm font-semibold">
-                หมายเหตุถึงผู้สมัคร
+                {t("Feedback for the applicant")}
                 <textarea
                   name="feedback"
                   rows={3}
                   maxLength={2000}
                   className="mt-2 w-full rounded-xl border bg-background p-3 text-sm"
-                  placeholder="กรอกเหตุผลเมื่อขอแก้ไขหรือปฏิเสธ"
+                  placeholder={t(
+                    "Explain why changes are required or the application is declined.",
+                  )}
                 />
               </label>
               <div className="flex flex-wrap gap-2">
@@ -143,7 +166,7 @@ export default async function PartnerReviews({
                   value="approved"
                   className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
                 >
-                  อนุมัติ
+                  {t("Approve")}
                 </button>
                 <button
                   type="submit"
@@ -151,7 +174,7 @@ export default async function PartnerReviews({
                   value="changes_requested"
                   className="rounded-xl border px-4 py-2 text-sm font-semibold"
                 >
-                  ขอเอกสารเพิ่ม
+                  {t("Request documents")}
                 </button>
                 <button
                   type="submit"
@@ -159,7 +182,7 @@ export default async function PartnerReviews({
                   value="rejected"
                   className="rounded-xl border border-destructive px-4 py-2 text-sm font-semibold text-destructive"
                 >
-                  ปฏิเสธ
+                  {t("Decline")}
                 </button>
               </div>
             </form>
@@ -167,7 +190,7 @@ export default async function PartnerReviews({
         ))}
         {applications.length === 0 && (
           <p className="rounded-3xl border bg-card p-8 text-center text-muted-foreground">
-            ไม่มีใบสมัครรอตรวจสอบ
+            {t("No applications awaiting review")}
           </p>
         )}
       </div>

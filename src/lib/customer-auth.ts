@@ -1,13 +1,3 @@
-export type CustomerAuthMethod = "phone";
-export type DemoCustomer = {
-  kind: "demo";
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  method: CustomerAuthMethod;
-};
-
 const phoneRules: Record<string, { length: number; trunk: boolean }> = {
   "+66": { length: 9, trunk: true },
   "+65": { length: 8, trunk: false },
@@ -30,26 +20,4 @@ export function normalizeCustomerPhone(
   if (!new RegExp(`^[1-9]\\d{${rule.length - 1}}$`).test(number)) return null;
   if (country === "+66" && !/^[689]/.test(number)) return null;
   return country + number;
-}
-
-export function validateDemoOtp(
-  code: string,
-  expiresAt: number,
-  now = Date.now(),
-) {
-  if (now >= expiresAt) return "expired";
-  return code === "123456" ? null : "invalid";
-}
-
-export function isDemoCustomer(value: unknown): value is DemoCustomer {
-  if (!value || typeof value !== "object") return false;
-  const profile = value as Partial<DemoCustomer>;
-  return (
-    profile.kind === "demo" &&
-    typeof profile.id === "string" &&
-    typeof profile.name === "string" &&
-    typeof profile.phone === "string" &&
-    typeof profile.email === "string" &&
-    profile.method === "phone"
-  );
 }

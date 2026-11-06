@@ -1,6 +1,8 @@
 import { createHmac, randomInt, timingSafeEqual } from "node:crypto";
 import { AuthError, prepareEmailRegistration } from "./auth";
 import { getDb } from "./db";
+import { emailConfigurationIssues } from "@/lib/service-config";
+import { sendTransactionalEmail } from "./email";
 
 const codeLifetimeMinutes = 10;
 const maxSendsPerHour = 5;
@@ -12,8 +14,7 @@ const uuidPattern =
 export function partnerEmailConfigured() {
   return Boolean(
     process.env.DATABASE_URL &&
-    process.env.RESEND_API_KEY &&
-    process.env.EMAIL_FROM &&
+    emailConfigurationIssues().length === 0 &&
     (process.env.PARTNER_OTP_SECRET?.length ?? 0) >= 32,
   );
 }
@@ -28,31 +29,16 @@ function otpHash(email: string, code: string) {
 }
 
 async function sendCode(email: string, code: string, id: string, hash: Buffer) {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.EMAIL_FROM;
-  if (!apiKey || !from) throw new AuthError("email_service_unavailable");
-  let response: Response;
   try {
-    response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        "Idempotency-Key": `partner-signup/${id}/${hash.toString("hex")}`,
-      },
-      body: JSON.stringify({
-        from,
-        to: [email],
-        subject: "รหัสยืนยันอีเมลพาร์ตเนอร์ RBC GO",
-        text: `รหัสยืนยันของคุณคือ ${code}\n\nรหัสนี้ใช้ได้ ${codeLifetimeMinutes} นาที หากคุณไม่ได้สมัครบัญชี RBC GO ให้ข้ามอีเมลนี้`,
-      }),
-      cache: "no-store",
-      signal: AbortSignal.timeout(10000),
+    await sendTransactionalEmail({
+      to: email,
+      subject: "รหัสยืนยันอีเมลพาร์ตเนอร์ RBC GO",
+      text: `รหัสยืนยันของคุณคือ ${code}\n\nรหัสนี้ใช้ได้ ${codeLifetimeMinutes} นาที หากคุณไม่ได้สมัครบัญชี RBC GO ให้ข้ามอีเมลนี้`,
+      idempotencyKey: `partner-signup/${id}/${hash.toString("hex")}`,
     });
   } catch {
     throw new AuthError("email_delivery_failed");
   }
-  if (!response.ok) throw new AuthError("email_delivery_failed");
 }
 
 async function releaseResendLock(id: string, hash: Buffer) {

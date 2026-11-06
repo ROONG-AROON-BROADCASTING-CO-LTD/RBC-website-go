@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { currentAccount } from "@/lib/server/auth";
+import { dispatchNotifications } from "@/lib/server/dispatch-notifications";
 import {
   BookingError,
   requestPartnerBooking,
@@ -38,5 +39,6 @@ export async function submitBookingRequest(
     if (error instanceof BookingError) return { error: error.code };
     throw error;
   }
+  dispatchNotifications();
   redirect(`/${locale}/partner-bookings/${bookingId}`);
 }

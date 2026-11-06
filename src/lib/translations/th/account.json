@@ -95,5 +95,13 @@
   "Manage your account and traveler information.": "จัดการบัญชีและข้อมูลผู้เดินทางของคุณ",
   "Find and manage your booking activity.": "ดูและจัดการรายการจองของคุณ",
   "See reviews from your completed trips.": "ดูรีวิวจากการเดินทางที่เสร็จสิ้น",
-  "Profile saved": "บันทึกข้อมูลลูกค้าแล้ว"
+  "Profile saved": "บันทึกข้อมูลลูกค้าแล้ว",
+  "Verify your email": "ยืนยันอีเมลของคุณ",
+  "Enter the 6-digit code sent to your email. It expires in 10 minutes.": "กรอกรหัส 6 หลักที่ส่งไปยังอีเมลของคุณ รหัสมีอายุ 10 นาที",
+  "Send email code": "ส่งรหัสทางอีเมล",
+  "Use email and password": "ใช้อีเมลและรหัสผ่าน",
+  "Change email address": "เปลี่ยนอีเมล",
+  "Check your inbox and spam folder. Never share your code.": "ตรวจกล่องจดหมายและจดหมายขยะ ห้ามบอกรหัสแก่ผู้อื่น",
+  "Email sign-in is temporarily unavailable. Please try again later.": "การเข้าสู่ระบบด้วยรหัสอีเมลยังไม่พร้อมใช้งาน กรุณาลองใหม่ภายหลัง",
+  "Use the sign-in method you originally used for this account.": "กรุณาใช้วิธีเข้าสู่ระบบเดิมของบัญชีนี้"
 }

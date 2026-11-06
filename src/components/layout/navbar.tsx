@@ -42,9 +42,6 @@ export function Navbar() {
   }, []);
   const isHome = pathname === href();
   const glass = scrolled || !isHome;
-  const internalWorkspace = /^\/(th|en|zh)\/(partner|operations)(\/|$)/.test(
-    pathname,
-  );
   const searchCategory = searchCategoryForPath(pathname, state.search.category);
   const mainLinks = [
     { name: "Home", path: "", active: isHome },
@@ -54,11 +51,6 @@ export function Navbar() {
       active: /^\/(th|en|zh)\/(search|vehicle|checkout|request)(\/|$)/.test(
         pathname,
       ),
-    },
-    {
-      name: "Trips & Experiences",
-      path: "experiences",
-      active: /^\/(th|en|zh)\/(experiences|experience)(\/|$)/.test(pathname),
     },
   ];
   return (
@@ -209,7 +201,6 @@ export function Navbar() {
                 {[
                   { name: "Home", path: "" },
                   { name: "Search Vehicles", path: `search/${searchCategory}` },
-                  { name: "Trips & Experiences", path: "experiences" },
                   ...categories.map((c) => ({
                     name: c.name,
                     path: `search/${c.id}`,
@@ -219,9 +210,6 @@ export function Navbar() {
                     : []),
                   { name: "Become a Partner", path: "partner-signup" },
                   { name: "Help", path: "help" },
-                  ...(internalWorkspace
-                    ? [{ name: "Design guide", path: "guide" }]
-                    : []),
                 ].map((link) => (
                   <SheetClose key={`${link.name}-${link.path}`} asChild>
                     <Link

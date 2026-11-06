@@ -13,6 +13,8 @@ export default async function CustomerEmailPage({
   const { mode, error, next } = await searchParams;
   const returnTo =
     next?.startsWith(`/${locale}/listing/`) ||
+    next?.startsWith(`/${locale}/account/`) ||
+    next?.startsWith(`/${locale}/messages/`) ||
     next?.startsWith(`/${locale}/partner-bookings`)
       ? next
       : `/${locale}/account/profile`;

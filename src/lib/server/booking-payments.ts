@@ -2,8 +2,10 @@ import { getDb } from "./db";
 import { randomUUID } from "node:crypto";
 import { BookingError } from "./partner-bookings";
 import {
-  createOmiseTestCharge,
-  getOmiseTestCharge,
+  createOmiseCharge,
+  getOmiseCharge,
+  isOmiseId,
+  omiseMode,
   OmiseApiError,
   type OmiseCharge,
 } from "./omise";
@@ -18,7 +20,7 @@ type PaymentAttempt = {
 
 function validateCharge(charge: OmiseCharge, attempt: PaymentAttempt) {
   if (
-    charge.livemode ||
+    charge.livemode !== (omiseMode() === "live") ||
     charge.currency.toUpperCase() !== "THB" ||
     charge.amount !== Number(attempt.amount_satang) ||
     charge.ref_id !== attempt.id
@@ -26,7 +28,11 @@ function validateCharge(charge: OmiseCharge, attempt: PaymentAttempt) {
     throw new Error("Omise charge does not match payment attempt");
 }
 
-export async function applyOmiseCharge(attemptId: string, charge: OmiseCharge) {
+export async function applyOmiseCharge(
+  attemptId: string,
+  charge: OmiseCharge,
+  eventId?: string,
+) {
   const sql = getDb();
   await sql.begin(async (tx) => {
     const [attempt] = await tx<PaymentAttempt[]>`
@@ -35,6 +41,14 @@ export async function applyOmiseCharge(attemptId: string, charge: OmiseCharge) {
     `;
     if (!attempt) throw new BookingError("payment_not_found");
     validateCharge(charge, attempt);
+    if (eventId) {
+      const inserted =
+        await tx`insert into rbc_go.payment_events(provider,provider_event_id,payment_attempt_id,payload,processed_at)
+        values('omise',${eventId},${attempt.id},${tx.json({ charge_id: charge.id, status: charge.status })},now())
+        on conflict do nothing returning provider_event_id`;
+      if (!inserted.length) return;
+    }
+    if (attempt.status === "refunded") return;
     if (attempt.status === "succeeded" && charge.status !== "successful")
       throw new Error(
         "A successful payment cannot be reversed by a stale event",
@@ -64,10 +78,15 @@ export async function payPartnerBooking(
 ) {
   if (!/^[0-9a-f-]{36}$/i.test(bookingId))
     throw new BookingError("invalid_booking");
-  if (!/^tokn_test_[a-z0-9]+$/.test(token))
+  if (!isOmiseId("tokn", token))
     throw new BookingError("invalid_payment_token");
   const sql = getDb();
   const attempt = await sql.begin(async (tx) => {
+    if (omiseMode() === "live") {
+      const [verified] =
+        await tx`select id from rbc_go.accounts where id=${accountId} and (email_verified_at is not null or phone_verified_at is not null)`;
+      if (!verified) throw new BookingError("verification_required");
+    }
     const [booking] = await tx<
       {
         id: string;
@@ -99,7 +118,7 @@ export async function payPartnerBooking(
   });
   let charge: OmiseCharge;
   try {
-    charge = await createOmiseTestCharge({
+    charge = await createOmiseCharge({
       token,
       amountSatang: attempt.amount,
       attemptId: attempt.id,
@@ -139,12 +158,15 @@ export async function refreshBookingPayment(
   if (!attempt?.provider_reference) return;
   await applyOmiseCharge(
     attempt.id,
-    await getOmiseTestCharge(attempt.provider_reference),
+    await getOmiseCharge(attempt.provider_reference),
   );
 }
 
-export async function applyOmiseWebhookCharge(chargeId: string) {
-  const charge = await getOmiseTestCharge(chargeId);
+export async function applyOmiseWebhookCharge(
+  chargeId: string,
+  eventId?: string,
+) {
+  const charge = await getOmiseCharge(chargeId);
   const sql = getDb();
   const [attempt] = await sql<PaymentAttempt[]>`
     select id, booking_id, amount_satang::text, status, provider_reference
@@ -152,5 +174,5 @@ export async function applyOmiseWebhookCharge(chargeId: string) {
       and (provider_reference = ${chargeId} or id::text = ${charge.ref_id ?? ""})
   `;
   if (!attempt) return;
-  await applyOmiseCharge(attempt.id, charge);
+  await applyOmiseCharge(attempt.id, charge, eventId);
 }

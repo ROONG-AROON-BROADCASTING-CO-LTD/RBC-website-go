@@ -15,19 +15,23 @@ import { translate } from "@/lib/i18n";
 import { getPublicListing } from "@/lib/server/public-listings";
 import { currentAccount } from "@/lib/server/auth";
 import { PartnerBookingForm } from "@/components/customer/partner-booking-form";
-
+import { WorkspaceActionForm } from "@/components/customer/workspace-action-form";
+import { isListingSaved } from "@/lib/server/workspace";
 export const dynamic = "force-dynamic";
-
 export default async function PublishedListingPage({
   params,
 }: {
-  params: Promise<{ locale: Locale; id: string }>;
+  params: Promise<{
+    locale: Locale;
+    id: string;
+  }>;
 }) {
   const { locale, id } = await params;
   if (!process.env.DATABASE_URL) notFound();
   const listing = await getPublicListing(id);
   if (!listing) notFound();
   const account = await currentAccount();
+  const saved = account ? await isListingSaved(account.id, id) : false;
   const t = (text: string) => translate(locale, text);
   const price = new Intl.NumberFormat(
     locale === "th" ? "th-TH" : locale === "zh" ? "zh-CN" : "en-GB",
@@ -52,7 +56,7 @@ export default async function PublishedListingPage({
             {listing.location_text} · {t("Provided by")} {listing.business_name}
           </p>
         </div>
-        <Badge variant="secondary">ส่งคำขอจองได้</Badge>
+        <Badge variant="secondary">{t("Booking requests open")}</Badge>
       </div>
       <div className="mt-7 grid gap-3 sm:grid-cols-2">
         {listing.images.map((imageId) => (
@@ -103,12 +107,22 @@ export default async function PublishedListingPage({
             </div>
           </dl>
           <p className="text-sm text-muted-foreground">
-            ราคาที่แสดงเป็นราคาเริ่มต้น
-            พาร์ทเนอร์จะเสนอราคาสุทธิหลังตรวจสอบวันและเวลา
+            {t(
+              "Prices shown are starting prices. Your partner will confirm a final quote after reviewing your dates.",
+            )}
           </p>
         </CardContent>
       </Card>
       <div className="mt-7 max-w-3xl">
+        {account && (
+          <div className="mb-5">
+            <WorkspaceActionForm
+              operation="save"
+              values={{ listingId: id, saved: String(!saved) }}
+              label={saved ? "Remove from saved" : "Save vehicle"}
+            />
+          </div>
+        )}
         <PartnerBookingForm
           locale={locale}
           listingId={listing.id}

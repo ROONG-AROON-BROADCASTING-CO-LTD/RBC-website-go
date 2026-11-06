@@ -1,5 +1,5 @@
 "use client";
-
+import { useRBC } from "@/components/rbc/provider";
 import Link from "next/link";
 import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
@@ -12,24 +12,24 @@ import {
   verifyPartnerRegistration,
   type FormResult,
 } from "@/lib/server/partner-actions";
-
 const initial: FormResult = { error: "" };
 const messages: Record<string, string> = {
-  invalid_name: "กรุณากรอกชื่ออย่างน้อย 2 ตัวอักษร",
-  invalid_email: "กรุณากรอกอีเมลให้ถูกต้อง",
-  invalid_password: "รหัสผ่านต้องมีอย่างน้อย 12 ตัวอักษร",
-  email_in_use: "อีเมลนี้ถูกใช้แล้ว กรุณาเข้าสู่ระบบ",
-  invalid_credentials: "อีเมลหรือรหัสผ่านไม่ถูกต้อง",
-  too_many_attempts: "ลองเข้าสู่ระบบอีกครั้งใน 15 นาที",
-  service_unavailable: "ระบบยังไม่เปิดใช้งาน กรุณาลองภายหลัง",
-  email_service_unavailable: "ระบบส่งอีเมลยังไม่พร้อมใช้งาน กรุณาลองภายหลัง",
-  email_delivery_failed: "ส่งอีเมลไม่สำเร็จ กรุณาลองอีกครั้ง",
-  code_send_limited: "ส่งรหัสบ่อยเกินไป กรุณารอสักครู่แล้วลองอีกครั้ง",
-  code_expired: "รหัสหมดอายุแล้ว กรุณาเริ่มสมัครใหม่",
-  invalid_code: "รหัสยืนยันไม่ถูกต้อง",
-  too_many_code_attempts: "กรอกรหัสผิดหลายครั้ง กรุณาเริ่มสมัครใหม่",
+  invalid_name: "Enter a name of at least 2 characters.",
+  invalid_email: "Enter a valid email address.",
+  invalid_password: "Use a password of at least 12 characters.",
+  email_in_use: "This email is already registered. Please sign in.",
+  invalid_credentials: "Email or password is incorrect.",
+  too_many_attempts: "Try signing in again in 15 minutes.",
+  service_unavailable: "This service is unavailable. Please try again later.",
+  email_service_unavailable:
+    "Email delivery is unavailable. Please try again later.",
+  email_delivery_failed: "Email could not be sent. Please try again.",
+  code_send_limited: "Too many code requests. Wait before trying again.",
+  code_expired: "The code has expired. Please restart registration.",
+  invalid_code: "Incorrect verification code.",
+  too_many_code_attempts:
+    "Too many incorrect codes. Please restart registration.",
 };
-
 export function PartnerAuthForm({
   mode,
   locale,
@@ -41,6 +41,7 @@ export function PartnerAuthForm({
   enabled: boolean;
   pendingEmail?: string | null;
 }) {
+  const { t } = useRBC();
   const [state, action, pending] = useActionState(
     mode === "register" ? registerPartner : loginPartner,
     initial,
@@ -65,17 +66,19 @@ export function PartnerAuthForm({
         </p>
         <h1 className="mt-3 text-3xl font-bold text-foreground">
           {verifyingEmail
-            ? "ยืนยันอีเมลพาร์ทเนอร์"
+            ? t("Verify partner email")
             : register
-              ? "สมัครบัญชีพาร์ทเนอร์"
-              : "เข้าสู่ระบบพาร์ทเนอร์"}
+              ? t("Create a partner account")
+              : t("Partner sign in")}
         </h1>
         <p className="mt-2 text-muted-foreground">
           {verifyingEmail
-            ? `กรอกรหัส 6 หลักที่ส่งไปยัง ${email ?? "อีเมลของคุณ"} ภายใน 10 นาที`
+            ? `${t("Enter the 6-digit code sent to your email within 10 minutes.")} ${email ?? ""}`
             : register
-              ? "ยืนยันอีเมลก่อนสร้างบัญชี แล้วส่งข้อมูลธุรกิจและเอกสารเพื่อรอการตรวจสอบ"
-              : "ติดตามสถานะใบสมัครและจัดการธุรกิจของคุณ"}
+              ? t(
+                  "Verify your email, then submit your business details and documents for review.",
+                )
+              : t("Track your application and manage your business.")}
         </p>
         {!enabled && (
           <p
@@ -83,8 +86,10 @@ export function PartnerAuthForm({
             className="mt-5 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900"
           >
             {register
-              ? "ยังไม่เปิดรับสมัครพาร์ทเนอร์ในขณะนี้ กรุณาลองใหม่ภายหลัง"
-              : "ระบบเข้าสู่ระบบยังไม่พร้อม กรุณาลองใหม่ภายหลัง"}
+              ? t(
+                  "Partner registration is currently unavailable. Please try again later.",
+                )
+              : t("Sign-in is unavailable. Please try again later.")}
           </p>
         )}
         {verifyingEmail ? (
@@ -92,7 +97,7 @@ export function PartnerAuthForm({
             <form action={verifyAction} className="mt-7 space-y-5">
               <input type="hidden" name="locale" value={locale} />
               <label className="block text-sm font-medium">
-                รหัสยืนยันจากอีเมล
+                {t("Email verification code")}
                 <Input
                   name="code"
                   type="text"
@@ -106,8 +111,10 @@ export function PartnerAuthForm({
               </label>
               {verification.error && (
                 <p role="alert" className="text-sm text-destructive">
-                  {messages[verification.error] ??
-                    "ยืนยันรหัสไม่สำเร็จ กรุณาลองอีกครั้ง"}
+                  {t(
+                    messages[verification.error] ??
+                      t("Unable to verify the code. Please try again."),
+                  )}
                 </p>
               )}
               <Button
@@ -116,7 +123,9 @@ export function PartnerAuthForm({
                 disabled={verifying || !enabled}
                 className="w-full"
               >
-                {verifying ? "กำลังตรวจรหัส..." : "ยืนยันอีเมลและสร้างบัญชี"}
+                {verifying
+                  ? t("Verifying code...")
+                  : t("Verify email and create account")}
               </Button>
             </form>
             <form action={resendAction} className="mt-4 text-center text-sm">
@@ -125,17 +134,19 @@ export function PartnerAuthForm({
                 disabled={resending || !enabled}
                 className="font-semibold text-primary underline-offset-4 hover:underline disabled:opacity-50"
               >
-                {resending ? "กำลังส่งรหัส..." : "ส่งรหัสอีกครั้ง"}
+                {resending ? t("Sending code...") : t("Resend code")}
               </button>
               {resend.error && (
                 <p role="alert" className="mt-2 text-destructive">
-                  {messages[resend.error] ??
-                    "ส่งรหัสไม่สำเร็จ กรุณาลองอีกครั้ง"}
+                  {t(
+                    messages[resend.error] ??
+                      t("Unable to send the code. Please try again."),
+                  )}
                 </p>
               )}
               {resend.message === "code_resent" && (
                 <p role="status" className="mt-2 text-muted-foreground">
-                  ส่งรหัสใหม่แล้ว กรุณาตรวจอีเมล
+                  {t("A new code was sent. Check your email.")}
                 </p>
               )}
             </form>
@@ -148,7 +159,7 @@ export function PartnerAuthForm({
                 type="submit"
                 className="text-muted-foreground underline-offset-4 hover:underline"
               >
-                เปลี่ยนอีเมล
+                {t("Change email")}
               </button>
             </form>
           </>
@@ -157,7 +168,7 @@ export function PartnerAuthForm({
             <input type="hidden" name="locale" value={locale} />
             {register && (
               <label className="block text-sm font-medium">
-                ชื่อผู้สมัคร
+                {t("Applicant name")}
                 <Input
                   name="name"
                   autoComplete="name"
@@ -169,7 +180,7 @@ export function PartnerAuthForm({
               </label>
             )}
             <label className="block text-sm font-medium">
-              อีเมล
+              {t("Email")}
               <Input
                 name="email"
                 type="email"
@@ -179,7 +190,7 @@ export function PartnerAuthForm({
               />
             </label>
             <label className="block text-sm font-medium">
-              รหัสผ่าน
+              {t("Password")}
               <Input
                 name="password"
                 type="password"
@@ -191,7 +202,7 @@ export function PartnerAuthForm({
             </label>
             {state.error && (
               <p role="alert" className="text-sm text-destructive">
-                {messages[state.error] ?? "ดำเนินการไม่สำเร็จ กรุณาลองอีกครั้ง"}
+                {t(messages[state.error] ?? t("Please try again."))}
               </p>
             )}
             <Button
@@ -201,20 +212,20 @@ export function PartnerAuthForm({
               className="w-full"
             >
               {pending
-                ? "กำลังดำเนินการ..."
+                ? t("Processing...")
                 : register
-                  ? "ส่งรหัสยืนยัน"
-                  : "เข้าสู่ระบบ"}
+                  ? t("Send verification code")
+                  : t("Sign In")}
             </Button>
           </form>
         )}
         <p className="mt-6 text-center text-sm text-muted-foreground">
-          {register ? "มีบัญชีแล้ว? " : "ยังไม่มีบัญชี? "}
+          {register ? t("Already have an account?") : t("Need an account?")}
           <Link
             href={`/${locale}/${register ? "partner-login" : "partner-signup"}`}
             className="font-semibold text-primary underline-offset-4 hover:underline"
           >
-            {register ? "เข้าสู่ระบบ" : "สมัครพาร์ทเนอร์"}
+            {register ? t("Sign In") : t("Register as a partner")}
           </Link>
         </p>
       </div>

@@ -95,5 +95,13 @@
   "Manage your account and traveler information.": "管理账户和旅客资料。",
   "Find and manage your booking activity.": "查看和管理您的预订。",
   "See reviews from your completed trips.": "查看已完成行程的评价。",
-  "Profile saved": "客户资料已保存"
+  "Profile saved": "客户资料已保存",
+  "Verify your email": "验证您的邮箱",
+  "Enter the 6-digit code sent to your email. It expires in 10 minutes.": "请输入发送至您邮箱的六位验证码，有效期为10分钟。",
+  "Send email code": "发送邮箱验证码",
+  "Use email and password": "使用邮箱和密码",
+  "Change email address": "更换邮箱地址",
+  "Check your inbox and spam folder. Never share your code.": "请检查收件箱和垃圾邮件，切勿与他人分享验证码。",
+  "Email sign-in is temporarily unavailable. Please try again later.": "邮箱验证码登录暂不可用，请稍后重试。",
+  "Use the sign-in method you originally used for this account.": "请使用此账户原来的登录方式。"
 }

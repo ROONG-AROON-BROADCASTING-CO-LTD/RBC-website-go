@@ -14,6 +14,17 @@ import { listPublicListings } from "@/lib/server/public-listings";
 type Props = { params: Promise<{ locale: string; slug?: string[] }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale, slug = [] } = await params;
+  if (
+    [
+      "vehicle",
+      "checkout",
+      "confirmation",
+      "experience",
+      "experiences",
+      "guide",
+    ].includes(slug[0])
+  )
+    notFound();
   const titles: Record<string, string> = {
     search: "Search Vehicles",
     vehicle: vehicleById(slug[1])?.name || "Listing details",
@@ -39,6 +50,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 export default async function Page({ params }: Props) {
   const { locale, slug = [] } = await params;
+  if (
+    [
+      "vehicle",
+      "checkout",
+      "confirmation",
+      "experience",
+      "experiences",
+      "guide",
+      "request",
+    ].includes(slug[0])
+  )
+    notFound();
   if (slug[0] === "request" && vehicleById(slug[1]))
     redirect(`/${locale}/checkout/${slug[1]}`);
   if (slug[0] === "quote" || (slug[0] === "account" && slug[1] === "requests"))
@@ -54,7 +77,7 @@ export default async function Page({ params }: Props) {
         select role from rbc_go.staff_members where account_id = ${account.id}
       `;
       if (!staff) notFound();
-      redirect(`/${locale}/operations/partners`);
+      redirect(`/${locale}/operations/payments`);
     } else {
       const [member] = await sql<{ id: string }[]>`
         select partners.id from rbc_go.partner_members members
@@ -65,10 +88,19 @@ export default async function Page({ params }: Props) {
       redirect(`/${locale}/partner/overview`);
     }
   }
-  const publicListings =
-    slug[0] === "search" && process.env.DATABASE_URL
+  const publicListings = process.env.DATABASE_URL
+    ? slug[0] === "search"
       ? await listPublicListings(slug[1] as Category)
-      : [];
+      : !slug.length
+        ? (
+            await Promise.all(
+              ["boats", "motorcycles", "cars", "jets"].map(listPublicListings),
+            )
+          )
+            .flat()
+            .slice(0, 12)
+        : []
+    : [];
   return (
     <ScreenRouter
       key={slug.join("/")}

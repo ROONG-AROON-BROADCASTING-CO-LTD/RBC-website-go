@@ -63,16 +63,6 @@ export function records(state: AppState, tab: string): Row[] {
         status: b.payment,
         amount: b.total,
       }));
-    case "fleet":
-      return [
-        {
-          id: "FLEET-001",
-          name: "Mercedes-Benz E-Class",
-          detail: "RBC GO · Company-owned · Sample",
-          status: state.fleet,
-          amount: 3200,
-        },
-      ];
     default:
       return [];
   }

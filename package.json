@@ -7,9 +7,15 @@
     "build": "next build --webpack",
     "db:migrate": "node scripts/migrate.mjs",
     "db:migrate:local": "node --env-file=.env.local scripts/migrate.mjs",
-    "start": "next start",
+    "start": "node scripts/start.mjs",
+    "postbuild": "node scripts/prepare-standalone.mjs",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "node --import tsx --test tests/*.test.ts",
+    "test:integration": "node --env-file-if-exists=.env.local scripts/test-integration.mjs",
+    "lint": "eslint src tests scripts --max-warnings=0",
+    "setup:check": "node --env-file-if-exists=.env.local --import tsx scripts/check-config.mjs",
+    "db:backup": "node --env-file-if-exists=.env.local scripts/backup.mjs",
+    "jobs": "node --env-file-if-exists=.env.local scripts/jobs.mjs",
     "format": "prettier --write src tests"
   },
   "dependencies": {
@@ -20,6 +26,7 @@
     "lucide-react": "^1.64.0",
     "next": "16.4.3",
     "next-themes": "^0.4.6",
+    "nodemailer": "^10.3.1",
     "postgres": "file:vendor/postgres-3.4.7.tgz",
     "radix-ui": "^1.8.1",
     "react": "19.3.0",
@@ -31,6 +38,7 @@
     "@tailwindcss/postcss": "^4.3.3",
     "@tailwindcss/turbopack": "^4",
     "@types/node": "^20",
+    "@types/nodemailer": "^8.0.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
@@ -42,6 +50,6 @@
     "typescript": "^5"
   },
   "engines": {
-    "node": ">=20.9.0"
+    "node": ">=22.0.0"
   }
 }

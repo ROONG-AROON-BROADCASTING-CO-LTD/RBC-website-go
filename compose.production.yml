@@ -1,0 +1,60 @@
+services:
+  database:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: rbc_go
+      POSTGRES_USER: rbc_go
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+    volumes:
+      - database:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rbc_go -d rbc_go"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  migrate:
+    build: .
+    image: rbc-go-next:local
+    env_file: .env.production
+    environment:
+      DATABASE_URL: postgresql://rbc_go:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@database:5432/rbc_go
+    command: ["node", "scripts/migrate.mjs"]
+    depends_on:
+      database:
+        condition: service_healthy
+  web:
+    image: rbc-go-next:local
+    restart: unless-stopped
+    env_file: .env.production
+    environment:
+      DATABASE_URL: postgresql://rbc_go:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@database:5432/rbc_go
+      APP_BASE_URL: https://${APP_DOMAIN:?Set APP_DOMAIN}
+      GOOGLE_REDIRECT_URI: https://${APP_DOMAIN:?Set APP_DOMAIN}/api/auth/google/callback
+      ENABLE_DEMO: "false"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+  proxy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:?Set APP_DOMAIN}
+    ports: ["80:80", "443:443"]
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [web]
+  jobs:
+    image: rbc-go-next:local
+    restart: unless-stopped
+    env_file: .env.production
+    environment:
+      JOBS_BASE_URL: http://web:3000
+    command: ["node", "scripts/jobs.mjs"]
+    depends_on: [web]
+volumes:
+  database:
+  caddy_data:
+  caddy_config:
