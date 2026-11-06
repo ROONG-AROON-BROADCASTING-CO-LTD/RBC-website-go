@@ -4,7 +4,7 @@ Next.js 16.4.3 / React 19.3 / PostgreSQL พร้อม UI ไทย อัง�
 
 ระบบบัญชี ใบสมัครพาร์ทเนอร์ รายการยานพาหนะ คำขอจอง ราคา การชำระเงิน ข้อความ รายการที่บันทึก รีวิว และปฏิทิน ใช้ข้อมูลฝั่งเซิร์ฟเวอร์ แยกสิทธิ์ตามบัญชี ข้อมูลยานพาหนะตัวอย่างถูกนำออกจากเว็บแล้ว หน้าแรก/ค้นหาใช้เฉพาะรายการที่อนุมัติจากฐานข้อมูล เส้นทางเดโมเดิมเปิดไม่ได้แม้มีค่า `ENABLE_DEMO` เก่าค้างอยู่
 
-**สถานะ 7 พฤศจิกายน 2026:** เว็บมี production hosting บน Vercel ที่ https://rbc-website-go.vercel.app และยังใช้ Omise test mode การ deploy เว็บไม่ใช่การเปิดรับหรือโอนเงินจริง รุ่นนี้เพิ่มภาพรวมธุรกิจ รายได้แยกพาร์ทเนอร์ ค่าคอมมิชชันเริ่มต้น 10% คำขอถอนเงิน และหน้ารายละเอียดพร้อมแกลเลอรี ชุดทดสอบก่อน deploy ผ่าน 52/52 ข้อ พร้อม lint และ production build
+**สถานะ 7 พฤศจิกายน 2026:** เว็บมี production hosting บน Vercel ที่ https://rbc-website-go.vercel.app และยังใช้ Omise test mode การ deploy เว็บไม่ใช่การเปิดรับหรือโอนเงินจริง รุ่นนี้เพิ่มภาพรวมธุรกิจ รายได้แยกพาร์ทเนอร์ ค่าคอมมิชชันเริ่มต้น 10% คำขอถอนเงิน และหน้ารายละเอียดพร้อมแกลเลอรี ชุดทดสอบก่อน deploy ผ่าน 60/60 ข้อ พร้อม lint และ production build
 
 เคยทดสอบชำระ คืนเงิน และ payout กับ Omise sandbox จริงแล้ว ระบบส่งอีเมลรองรับ Gmail/Resend และใช้ OTP อีเมลแทน SMS ตรวจ Gmail TLS/authentication และส่งอีเมลทดสอบเข้าบัญชีผู้ส่งสำเร็จ แต่ยังไม่ได้ตรวจ OTP/verification/reset/notification ทุกชนิดผ่านกล่องจดหมายจริง และยังต้องยืนยัน live keys, สิทธิ์จ่าย third-party recipients, webhook และ worker ของ environment ก่อนเปิดรับเงินจริง ขั้นตอนรับบริการเฉพาะเรือ รถจักรยานยนต์ รถยนต์ และเครื่องบินยังใช้สถานะ handover/completed ร่วมกัน ไม่ได้มีระบบ boarding/ตรวจใบขับขี่อัตโนมัติ
 
@@ -28,6 +28,8 @@ npm run start
 Build สร้าง standalone server และคัดลอก static assets ผ่าน `postbuild` แล้ว `npm run start` จะรัน standalone server โดยตรง รองรับ `-p` และ `-H` เช่น `npm run start -- -p 3100 -H localhost`
 
 ### PostgreSQL TLS / `SELF_SIGNED_CERT_IN_CHAIN`
+
+บน Vercel runtime ใช้ Supabase shared pooler แบบ transaction (port 6543) อัตโนมัติเมื่อ `DATABASE_URL` เป็น shared pooler port 5432 โดยคง host/credential/database และการตรวจ TLS เดิม จำกัด pool ต่อ function เป็น 1 และปิด query pipelining (`max_pipeline: 0` พร้อม driver patch ใน `vendor/README.md`) เพื่อไม่ให้ serverless instances ใช้ session pool จนเกิด `EMAXCONNSESSION` สคริปต์ migration/backup ใช้ connection เดิม ไม่ถูกเปลี่ยนโหมด
 
 เว็บและ migration ใช้ CA สาธารณะของ Supabase ที่รวมไว้ในโค้ดโดยอัตโนมัติเมื่อ `DATABASE_URL` ชี้ไปที่ `*.pooler.supabase.com` พร้อมตรวจ certificate และ hostname (`rejectUnauthorized: true`) ตาม [แนวทาง SSL ของ Supabase](https://supabase.com/docs/guides/platform/ssl-enforcement) จึงไม่ต้องปิดการตรวจสอบ TLS เพื่อแก้ error นี้
 

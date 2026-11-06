@@ -1,5 +1,6 @@
 import postgres from "postgres";
 import { databaseSslOptions } from "./database-ssl.mjs";
+import { databaseRuntimeConfig } from "./database-runtime.mjs";
 
 type Database = ReturnType<typeof postgres>;
 type DatabaseGlobal = typeof globalThis & { __rbcGoDb?: Database };
@@ -12,12 +13,11 @@ export function getDb(): Database {
 
   const globalForDb = globalThis as DatabaseGlobal;
   if (!globalForDb.__rbcGoDb) {
-    globalForDb.__rbcGoDb = postgres(connectionString, {
-      ...databaseSslOptions(connectionString),
-      max: 5,
-      idle_timeout: 20,
-      connect_timeout: 5,
-      prepare: false,
+    const { connectionString: runtimeUrl, ...pool } =
+      databaseRuntimeConfig(connectionString);
+    globalForDb.__rbcGoDb = postgres(runtimeUrl, {
+      ...databaseSslOptions(runtimeUrl),
+      ...pool,
     });
   }
   return globalForDb.__rbcGoDb;
