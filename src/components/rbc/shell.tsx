@@ -8,11 +8,20 @@ import { Toaster } from "@/components/ui/sonner";
 import { useRBC } from "@/components/rbc/provider";
 import { Notice } from "@/components/rbc/common";
 import { cn } from "@/lib/utils";
+import { accountAreaForPath } from "@/lib/account-area";
 
 export function SiteShell({ children }: { children: ReactNode }) {
   const { t, state, storageError } = useRBC();
   const pathname = usePathname();
   const isHome = /^\/(th|en|zh)\/?$/.test(pathname);
+  if (accountAreaForPath(pathname) === "operations") {
+    return (
+      <>
+        {children}
+        <Toaster position="top-center" richColors />
+      </>
+    );
+  }
   return (
     <>
       <a

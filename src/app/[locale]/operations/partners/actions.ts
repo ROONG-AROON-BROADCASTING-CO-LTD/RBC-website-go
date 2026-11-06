@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { currentAccount } from "@/lib/server/auth";
+import { currentStaff } from "@/lib/server/staff-auth";
+import { staffLoginPath } from "@/lib/staff-navigation";
 import { reviewPartnerApplication } from "@/lib/server/partner-application";
 
 export async function reviewApplication(form: FormData) {
@@ -12,8 +13,8 @@ export async function reviewApplication(form: FormData) {
       : form.get("locale") === "zh"
         ? "zh"
         : "th";
-  const account = await currentAccount();
-  if (!account) redirect(`/${locale}/partner-login`);
+  const account = await currentStaff();
+  if (!account) redirect(staffLoginPath(locale));
   const decision = String(form.get("decision") ?? "");
   const applicationId = String(form.get("applicationId") ?? "");
   if (

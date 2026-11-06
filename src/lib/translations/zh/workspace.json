@@ -359,5 +359,12 @@
   "Select at least one rental category.": "请至少选择一种出租类别。",
   "Select rental categories above to see the documents for each vehicle type.": "请先选择出租类别，查看各类所需材料。",
   "Rental categories": "出租类别",
-  "Not specified in the original application": "原申请未注明类别"
+  "Not specified in the original application": "原申请未注明类别",
+  "Staff sign in": "工作人员登录",
+  "Staff navigation": "工作人员导航",
+  "Review partner applications, vehicle listings and operations.": "审核合作伙伴申请、出租信息并处理运营事务。",
+  "This account does not have staff access. Contact your administrator.": "此账户没有工作人员权限，请联系管理员。",
+  "Use an account that has been granted staff access by your administrator.": "请使用已获管理员授权的工作人员账户。",
+  "Signing in...": "正在登录…",
+  "Back to website": "返回网站"
 }

@@ -1,8 +1,8 @@
 import { createTranslator } from "@/lib/i18n";
 import Image from "next/image";
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { currentAccount } from "@/lib/server/auth";
+import { currentStaff } from "@/lib/server/staff-auth";
+import { staffLoginPath } from "@/lib/staff-navigation";
 import { getDb } from "@/lib/server/db";
 import { reviewSubmittedListing } from "./actions";
 type ListingRow = {
@@ -31,18 +31,10 @@ export default async function ListingReviews({
   const { locale } = await params;
   const { error } = await searchParams;
   if (!process.env.DATABASE_URL) notFound();
-  const account = await currentAccount();
-  if (!account) redirect(`/${locale}/partner-login`);
+  const account = await currentStaff();
+  if (!account) redirect(staffLoginPath(locale));
   const sql = getDb();
-  const [staff] = await sql<
-    {
-      role: string;
-    }[]
-  >`
-    select role from rbc_go.staff_members where account_id = ${account.id}
-      and role in ('admin', 'reviewer')
-  `;
-  if (!staff) notFound();
+  if (account.role !== "admin" && account.role !== "reviewer") notFound();
   const listings = await sql<ListingRow[]>`
     select listings.id, listings.title, listings.category, listings.description,
       listings.location_text, listings.capacity, listings.base_price_satang,
@@ -71,24 +63,8 @@ export default async function ListingReviews({
       <h1 className="mt-2 text-3xl font-bold">
         {t("Review vehicle listings")}
       </h1>
-      <nav className="mt-4 flex gap-4 text-sm font-semibold">
-        <Link
-          href={`/${locale}/operations/payments`}
-          className="text-primary hover:underline"
-        >
-          {t("Payments and settlements")}
-        </Link>
-        <Link
-          href={`/${locale}/operations/partners`}
-          className="text-primary hover:underline"
-        >
-          {t("Partner applications")}
-        </Link>
-        <span>{t("Vehicle listings")}</span>
-      </nav>
       <p className="mt-5 text-muted-foreground">
-        {listings.length}
-        {t("awaiting review")}
+        {listings.length} {t("awaiting review")}
       </p>
       {error && (
         <p
