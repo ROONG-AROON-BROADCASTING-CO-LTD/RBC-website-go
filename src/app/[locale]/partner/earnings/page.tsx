@@ -1,109 +1,74 @@
 import Link from "next/link";
-import { redirect, notFound } from "next/navigation";
+import { redirect } from "next/navigation";
 import { currentAccount } from "@/lib/server/auth";
 import { getActivePartner } from "@/lib/server/listings";
-import { getDb } from "@/lib/server/db";
+import { partnerFinancials } from "@/lib/server/business-finance";
 import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-  CardDescription,
-} from "@/components/ui/card";
+  FinanceMetrics,
+  FinanceModeNotice,
+  FinancialBookings,
+} from "@/components/operations/finance-ui";
+import { FinanceRefresh } from "@/components/operations/finance-controls";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { WalletCards } from "lucide-react";
 import { createTranslator } from "@/lib/i18n";
 export default async function EarningsPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>;
+  searchParams: Promise<{
+    period?: string;
+    mode?: string;
+    q?: string;
+    page?: string;
+  }>;
 }) {
   const { locale } = await params,
+    filters = await searchParams,
     t = createTranslator(locale);
-  if (!process.env.DATABASE_URL) notFound();
   const account = await currentAccount();
   if (!account) redirect(`/${locale}/partner-login`);
   const partner = await getActivePartner(account.id);
   if (!partner) redirect(`/${locale}/apply`);
-  const sql = getDb();
-  const [payments, payouts] = await Promise.all([
-    sql<
-      {
-        id: string;
-        title: string;
-        amount: string;
-        deposit: string;
-        status: string;
-      }[]
-    >`select bookings.id,listings.title,attempts.amount_satang::text as amount,bookings.deposit_satang::text as deposit,bookings.status
-      from rbc_go.payment_attempts attempts join rbc_go.bookings bookings on bookings.id=attempts.booking_id
-      join rbc_go.listings listings on listings.id=bookings.listing_id where listings.partner_id=${partner.id} and attempts.status in ('succeeded','refunded') order by attempts.created_at desc limit 100`,
-    sql<
-      {
-        id: string;
-        amount_satang: string;
-        net_satang: string | null;
-        fee_satang: string | null;
-        status: string;
-        created_at: Date;
-      }[]
-    >`select id,amount_satang::text,net_satang::text,fee_satang::text,status,created_at from rbc_go.payouts where partner_id=${partner.id} order by created_at desc limit 100`,
-  ]);
-  const money = (value: string) =>
-    new Intl.NumberFormat(locale, {
-      style: "currency",
-      currency: "THB",
-    }).format(Number(value) / 100);
+  const finance = await partnerFinancials(account.id, filters);
   return (
-    <div className="mx-auto flex max-w-4xl flex-col gap-5 px-4 py-10">
-      <Button asChild variant="ghost" className="self-start">
-        <Link href={`/${locale}/partner/overview`}>{t("Partner portal")}</Link>
-      </Button>
-      <h1 className="text-3xl font-bold">{t("Earnings")}</h1>
-      {payments.map((payment) => (
-        <Card key={payment.id}>
-          <CardHeader>
-            <CardTitle>{payment.title}</CardTitle>
-            <CardDescription>{payment.id.slice(0, 8)}</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-wrap gap-4">
-            <Badge variant="secondary">{t(payment.status)}</Badge>
-            <span>
-              {t("Total including deposit")}: {money(payment.amount)}
-            </span>
-            <span>
-              {t("Security deposit")}: {money(payment.deposit)}
-            </span>
-          </CardContent>
-        </Card>
-      ))}
-      <h2 className="text-2xl font-bold">{t("Payouts")}</h2>
-      {!payouts.length && <p>{t("No records yet")}</p>}
-      {payouts.map((payout) => (
-        <Card key={payout.id}>
-          <CardHeader>
-            <CardTitle>{money(payout.amount_satang)}</CardTitle>
-            <CardDescription>
-              {payout.created_at.toLocaleString(locale, {
-                timeZone: "Asia/Bangkok",
-              })}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Badge variant="secondary">{t(payout.status)}</Badge>
-            {payout.net_satang !== null && (
-              <p className="mt-3">
-                {t("Net bank transfer")}: {money(payout.net_satang)}
-              </p>
+    <div className="business-theme">
+      <div className="business-page">
+        <header className="business-heading">
+          <div>
+            <h1>{t("Earnings and withdrawals")}</h1>
+            <p>
+              {partner.business_name} ·{" "}
+              {t("Your share of confirmed customer payments")}
+            </p>
+          </div>
+          <Button variant="outline" asChild>
+            <Link href={`/${locale}/partner/overview`}>
+              {t("Partner portal")}
+            </Link>
+          </Button>
+        </header>
+        <FinanceModeNotice locale={locale} mode={finance.mode} />
+        <FinanceMetrics locale={locale} summary={finance.summary} partnerView />
+        <Alert>
+          <WalletCards />
+          <AlertTitle>{t("How withdrawals work")}</AlertTitle>
+          <AlertDescription>
+            {t(
+              "Payments appear after gateway confirmation. Once the booking is completed, the deposit is returned and your payout account is verified, open Details and request withdrawal. Staff review the request before transferring to your verified bank account. Only the business owner can request a withdrawal.",
             )}
-            {payout.fee_satang !== null && (
-              <p className="mt-1 text-sm text-muted-foreground">
-                {t("Gateway transfer fees")}: {money(payout.fee_satang)}
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      ))}
+          </AlertDescription>
+        </Alert>
+        <FinancialBookings
+          locale={locale}
+          {...finance}
+          partnerView
+          canWithdraw={partner.role === "owner"}
+        />
+        <FinanceRefresh locale={locale} />
+      </div>
     </div>
   );
 }

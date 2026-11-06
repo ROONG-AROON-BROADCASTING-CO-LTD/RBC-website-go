@@ -47,12 +47,8 @@ check("OMISE_WEBHOOK_SECRET", Boolean(process.env.OMISE_WEBHOOK_SECRET));
 console.log(
   "INFO Customer verification uses email OTP; Twilio is not required.",
 );
-check(
-  "PLATFORM_COMMISSION_BPS (explicit business policy)",
-  Boolean(process.env.PLATFORM_COMMISSION_BPS?.trim()) &&
-    Number.isInteger(Number(process.env.PLATFORM_COMMISSION_BPS)) &&
-    Number(process.env.PLATFORM_COMMISSION_BPS) >= 0 &&
-    Number(process.env.PLATFORM_COMMISSION_BPS) <= 10000,
+console.log(
+  "INFO Commission policy is stored in the database (migration 14), default 10%; manage it in Staff > Business overview.",
 );
 if (production) {
   check(

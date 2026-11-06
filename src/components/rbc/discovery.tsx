@@ -418,16 +418,6 @@ export function SearchResults({
               className="mb-8 flex flex-col gap-4"
               aria-label={t("Approved partner listings")}
             >
-              <div>
-                <h2 className="text-xl font-semibold">
-                  {t("Approved partner listings")}
-                </h2>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {t(
-                    "Choose your dates and request a final quote from a reviewed partner.",
-                  )}
-                </p>
-              </div>
               {publicResults.map((listing) => (
                 <PublishedListingCard key={listing.id} listing={listing} />
               ))}

@@ -1,3 +1,10 @@
+import {
+  WalletCards,
+  CalendarDays,
+  CarFront,
+  ClipboardList,
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { createTranslator } from "@/lib/i18n";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
@@ -32,23 +39,65 @@ export default async function PartnerOverview({
   ]);
   if (!partner) redirect(`/${locale}/apply`);
   return (
-    <main className="mx-auto max-w-6xl px-4 py-10 md:py-14">
-      <p className="text-sm font-bold tracking-widest text-primary">
-        RBC GO PARTNERS
-      </p>
-      <h1 className="mt-2 text-3xl font-bold">{partner.business_name}</h1>
-      <p className="mt-2 text-muted-foreground">
-        {t("Manage your vehicle listings")}
-      </p>
-      <div className="mt-5 flex flex-wrap gap-3">
-        <Button asChild variant="outline"><Link href={`/${locale}/partner/earnings`}>{t("Earnings")}</Link></Button>
-        <Button asChild variant="outline">
-          <Link href={`/${locale}/partner/availability`}>
-            {t("Availability calendar")}
-          </Link>
-        </Button>
+    <main className="business-theme partner-page mx-auto max-w-7xl px-4 py-8 md:px-8 md:py-10">
+      <header className="partner-hero">
+        <p className="text-sm font-bold tracking-widest text-primary">
+          RBC GO PARTNERS
+        </p>
+        <h1 className="mt-2 text-3xl font-bold">{partner.business_name}</h1>
+        <p className="mt-2 text-muted-foreground">
+          {t("Manage your vehicle listings")}
+        </p>
+        <div className="mt-5 flex flex-wrap gap-3">
+          <Button asChild size="lg">
+            <Link href={`/${locale}/partner/earnings`}>
+              <WalletCards data-icon="inline-start" />
+              {t("Earnings and withdrawals")}
+            </Link>
+          </Button>
+          <Button asChild variant="secondary" size="lg">
+            <Link href={`/${locale}/partner/availability`}>
+              <CalendarDays data-icon="inline-start" />
+              {t("Availability calendar")}
+            </Link>
+          </Button>
+        </div>
+      </header>
+      <div className="mt-6 grid gap-4 sm:grid-cols-3">
+        {[
+          [
+            "Booking requests",
+            bookings.filter((b) => b.status === "requested").length,
+            ClipboardList,
+            "company",
+          ],
+          ["Vehicle listings", listings.length, CarFront, "primary"],
+          [
+            "Published listings",
+            listings.filter((l) => l.status === "approved").length,
+            CarFront,
+            "received",
+          ],
+        ].map(([label, value, Icon, tone]) => {
+          const Symbol = Icon as typeof CarFront;
+          return (
+            <section
+              key={String(label)}
+              className="finance-metric"
+              data-tone={tone}
+            >
+              <span className="finance-metric-icon">
+                <Symbol />
+              </span>
+              <div>
+                <h2>{t(String(label))}</h2>
+                <p className="finance-metric-value">{String(value)}</p>
+              </div>
+            </section>
+          );
+        })}
       </div>
-      <section className="mt-8 rounded-3xl border bg-card p-6">
+      <section className="partner-bookings mt-6 rounded-2xl border bg-card p-6">
         <h2 className="text-xl font-bold">
           {t("Booking requests (")}
           {bookings.length})
@@ -75,9 +124,19 @@ export default async function PartnerOverview({
             <article key={booking.id} className="rounded-2xl border p-5">
               <div className="flex items-start justify-between gap-3">
                 <h3 className="font-semibold">{booking.title}</h3>
-                <span className="rounded-full bg-secondary px-3 py-1 text-xs">
+                <Badge
+                  variant={
+                    booking.status === "confirmed" ||
+                    booking.status === "completed"
+                      ? "success"
+                      : booking.status === "requested" ||
+                          booking.status === "held"
+                        ? "warning"
+                        : "secondary"
+                  }
+                >
                   {t(booking.status)}
-                </span>
+                </Badge>
               </div>
               <p className="mt-2 text-sm">
                 {booking.traveler_snapshot.name} ·{" "}
@@ -193,7 +252,7 @@ export default async function PartnerOverview({
             {t("Vehicle listings (")}
             {listings.length})
           </h2>
-          <div className="space-y-3">
+          <div className="flex flex-col gap-3">
             {listings.map((listing) => (
               <article
                 key={listing.id}
@@ -206,9 +265,17 @@ export default async function PartnerOverview({
                       {listing.location_text} · {listing.category}
                     </p>
                   </div>
-                  <span className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold">
+                  <Badge
+                    variant={
+                      listing.status === "approved"
+                        ? "success"
+                        : listing.status === "submitted"
+                          ? "warning"
+                          : "secondary"
+                    }
+                  >
                     {t(listing.status)}
-                  </span>
+                  </Badge>
                 </div>
                 <p className="mt-3 text-sm">
                   ฿

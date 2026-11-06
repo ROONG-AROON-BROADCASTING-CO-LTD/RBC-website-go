@@ -1,7 +1,6 @@
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, ArrowUpRight, MapPin, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -15,6 +14,7 @@ import { translate } from "@/lib/i18n";
 import { getPublicListing } from "@/lib/server/public-listings";
 import { currentAccount } from "@/lib/server/auth";
 import { PartnerBookingForm } from "@/components/customer/partner-booking-form";
+import { PublishedListingGallery } from "@/components/customer/published-listing-gallery";
 import { WorkspaceActionForm } from "@/components/customer/workspace-action-form";
 import { isListingSaved } from "@/lib/server/workspace";
 export const dynamic = "force-dynamic";
@@ -38,47 +38,58 @@ export default async function PublishedListingPage({
     { style: "currency", currency: "THB", maximumFractionDigits: 2 },
   );
   return (
-    <main className="mx-auto max-w-6xl px-4 py-8 md:py-12">
-      <Button variant="ghost" asChild>
-        <Link href={`/${locale}/search/${listing.category}`}>
-          {t("Back to search")}
-        </Link>
-      </Button>
-      <div className="mt-6 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="text-sm font-semibold text-primary">
-            {t("Published partner vehicle")}
-          </p>
-          <h1 className="mt-2 text-3xl font-semibold md:text-4xl">
+    <main className="mx-auto max-w-6xl px-4 py-6 [--primary:#2563eb] md:py-8">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Button variant="outline" asChild className="bg-card">
+          <Link href={`/${locale}/search/${listing.category}`}>
+            <ArrowLeft data-icon="inline-start" />
+            {t("Back to search")}
+          </Link>
+        </Button>
+        {account && (
+          <WorkspaceActionForm
+            operation="save"
+            values={{ listingId: id, saved: String(!saved) }}
+            label={saved ? "Remove from saved" : "Save vehicle"}
+          />
+        )}
+      </div>
+      <header className="my-6 flex flex-col gap-5 sm:my-7 lg:flex-row lg:items-end lg:justify-between lg:gap-8">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-semibold leading-tight text-foreground sm:text-3xl lg:text-4xl">
             {listing.title}
           </h1>
-          <p className="mt-2 text-muted-foreground">
-            {listing.location_text} · {t("Provided by")} {listing.business_name}
-          </p>
-        </div>
-        <Badge variant="secondary">{t("Booking requests open")}</Badge>
-      </div>
-      <div className="mt-7 grid gap-3 sm:grid-cols-2">
-        {listing.images.map((imageId) => (
-          <div
-            key={imageId}
-            className="relative aspect-[1.5] overflow-hidden rounded-2xl bg-muted"
-          >
-            <Image
-              src={`/api/listing-images/${imageId}`}
-              alt={listing.title}
-              fill
-              sizes="(max-width: 640px) 100vw, 50vw"
-              unoptimized
-              className="object-cover"
-            />
+          <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
+            <p className="flex items-center gap-2">
+              <MapPin
+                className="size-4 shrink-0 text-primary"
+                aria-hidden="true"
+              />
+              {listing.location_text}
+            </p>
+            <p className="flex items-center gap-2">
+              <Users
+                className="size-4 shrink-0 text-primary"
+                aria-hidden="true"
+              />
+              {t(`${listing.capacity} guests`)}
+            </p>
           </div>
-        ))}
-      </div>
+        </div>
+        <Button asChild className="self-start lg:self-auto">
+          <Link href="#booking-request">
+            {t("Request a booking")}
+            <ArrowUpRight data-icon="inline-end" />
+          </Link>
+        </Button>
+      </header>
+      <PublishedListingGallery images={listing.images} title={listing.title} />
       <Card className="mt-7">
         <CardHeader>
           <CardTitle className="text-xl">{t("Vehicle details")}</CardTitle>
-          <CardDescription>{listing.business_name}</CardDescription>
+          <CardDescription>
+            {t("Provided by")} {listing.business_name}
+          </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <p className="whitespace-pre-wrap leading-7">{listing.description}</p>
@@ -93,7 +104,7 @@ export default async function PublishedListingPage({
               <dt className="text-sm text-muted-foreground">
                 {t("Starting price")}
               </dt>
-              <dd className="mt-1 font-semibold">
+              <dd className="mt-1 text-xl font-semibold text-primary">
                 {price.format(Number(listing.base_price_satang) / 100)}
               </dd>
             </div>
@@ -113,16 +124,7 @@ export default async function PublishedListingPage({
           </p>
         </CardContent>
       </Card>
-      <div className="mt-7 max-w-3xl">
-        {account && (
-          <div className="mb-5">
-            <WorkspaceActionForm
-              operation="save"
-              values={{ listingId: id, saved: String(!saved) }}
-              label={saved ? "Remove from saved" : "Save vehicle"}
-            />
-          </div>
-        )}
+      <div id="booking-request" className="mt-7 max-w-3xl scroll-mt-28">
         <PartnerBookingForm
           locale={locale}
           listingId={listing.id}

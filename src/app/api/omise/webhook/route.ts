@@ -1,4 +1,5 @@
 import { applyOmiseWebhookCharge } from "@/lib/server/booking-payments";
+import { applyOmiseWebhookTransfer } from "@/lib/server/settlements";
 import { dispatchNotifications } from "@/lib/server/dispatch-notifications";
 import { isOmiseId, verifyOmiseWebhook } from "@/lib/server/omise";
 
@@ -27,6 +28,23 @@ export async function POST(request: Request) {
   ) {
     try {
       await applyOmiseWebhookCharge(event.data!.id!, event.id);
+      dispatchNotifications();
+    } catch {
+      return new Response("Reconciliation failed", { status: 500 });
+    }
+  }
+  if (
+    [
+      "transfer.create",
+      "transfer.pay",
+      "transfer.fail",
+      "transfer.send",
+      "transfer.update",
+    ].includes(event.key ?? "") &&
+    isOmiseId("trsf", event.data?.id ?? "")
+  ) {
+    try {
+      await applyOmiseWebhookTransfer(event.data!.id!);
       dispatchNotifications();
     } catch {
       return new Response("Reconciliation failed", { status: 500 });

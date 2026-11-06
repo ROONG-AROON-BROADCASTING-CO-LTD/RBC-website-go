@@ -76,7 +76,7 @@ try {
   const files = (await readdir("tests"))
     .filter((name) => name.endsWith(".test.ts"))
     .map((name) => `tests/${name}`);
-  await run(["--import", "tsx", "--test", ...files]);
+  await run(["--import", "tsx", "--test", "--test-concurrency=1", ...files]);
 } finally {
   server.kill("SIGTERM");
   await once(server, "exit");

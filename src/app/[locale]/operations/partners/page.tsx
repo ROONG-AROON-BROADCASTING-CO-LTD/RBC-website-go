@@ -1,3 +1,4 @@
+import { PartnerDirectory } from "@/components/operations/partner-directory";
 import { createTranslator } from "@/lib/i18n";
 import { partnerCategoryLabel } from "@/lib/partner-categories";
 import { notFound, redirect } from "next/navigation";
@@ -24,11 +25,14 @@ export default async function PartnerReviews({
   }>;
   searchParams: Promise<{
     error?: string;
+    q?: string;
+    status?: string;
+    page?: string;
   }>;
 }) {
   const t = createTranslator((await params).locale);
   const { locale } = await params;
-  const { error } = await searchParams;
+  const { error, q, status, page } = await searchParams;
   if (!process.env.DATABASE_URL) notFound();
   const account = await currentStaff();
   if (!account) redirect(staffLoginPath(locale));
@@ -57,13 +61,23 @@ export default async function PartnerReviews({
     order by documents.uploaded_at asc
   `;
   return (
-    <main className="mx-auto max-w-5xl px-4 py-10 md:py-14">
-      <p className="text-sm font-bold tracking-widest text-primary">
-        RBC GO OPERATIONS
-      </p>
-      <h1 className="mt-2 text-3xl font-bold">
+    <main className="business-page">
+      <header className="business-heading">
+        <div>
+          <h1>{t("Partners")}</h1>
+          <p>{t("Review applications and manage your partner directory.")}</p>
+        </div>
+      </header>
+      <PartnerDirectory
+        accountId={account.id}
+        locale={locale}
+        q={q}
+        status={status}
+        page={page}
+      />
+      <h2 className="text-xl font-semibold">
         {t("Review partner applications")}
-      </h1>
+      </h2>
       <p className="mt-2 text-muted-foreground">
         {applications.length} {t("awaiting review")}
       </p>
@@ -75,7 +89,7 @@ export default async function PartnerReviews({
           {t("Please check your details and try again.")}
         </p>
       )}
-      <div className="mt-7 space-y-5">
+      <div className="flex flex-col gap-5">
         {applications.map((application) => (
           <section
             key={application.id}

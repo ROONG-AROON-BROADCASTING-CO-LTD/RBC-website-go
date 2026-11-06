@@ -62,7 +62,9 @@ export async function applyOmiseCharge(
           ? "pending"
           : "failed";
     await tx`update rbc_go.payment_attempts set provider_reference = ${charge.id},
-      status = ${status}, updated_at = now() where id = ${attempt.id}`;
+      status = ${status}, livemode=${charge.livemode},
+      captured_at=case when ${status}='succeeded' then coalesce(captured_at,now()) else captured_at end,
+      updated_at = now() where id = ${attempt.id}`;
     if (status === "succeeded") {
       await tx`update rbc_go.bookings set status = 'confirmed', hold_expires_at = null,
         updated_at = now() where id = ${attempt.booking_id} and status = 'held'`;

@@ -1,5 +1,6 @@
 import { getDb } from "./db";
 import { BookingError } from "./partner-bookings";
+import { splitRental } from "../finance";
 import {
   createOmiseRefund,
   getOmiseRefund,
@@ -48,7 +49,8 @@ export async function requestBookingRefund(
       and (status = 'confirmed' and ${kind} = 'cancellation' or status = 'completed' and ${kind} = 'deposit') for update`;
     if (!booking) throw new BookingError("booking_locked");
     const [payout] =
-      await tx`select id from rbc_go.payouts where booking_id = ${bookingId}`;
+      await tx`select id from rbc_go.payouts where booking_id = ${bookingId}
+        union all select id from rbc_go.partner_withdrawal_requests where booking_id=${bookingId}`;
     if (payout) throw new BookingError("settlement_locked");
     const [payment] = await tx<
       { id: string }[]
@@ -246,19 +248,16 @@ export async function payOutBooking(accountId: string, bookingId: string) {
   await requireStaff(accountId, true);
   if (!omiseConfigured()) throw new BookingError("payment_service_unavailable");
   validId(bookingId);
-  const bps = Number(process.env.PLATFORM_COMMISSION_BPS);
-  if (
-    !process.env.PLATFORM_COMMISSION_BPS?.trim() ||
-    !Number.isInteger(bps) ||
-    bps < 0 ||
-    bps > 10000
-  )
-    throw new BookingError("commission_unconfigured");
   const sql = getDb();
   const row = await sql.begin(async (tx) => {
     const [booking] = await tx<
-      { partner_id: string; total_satang: string; deposit_satang: string }[]
-    >`select listings.partner_id,bookings.total_satang::text,bookings.deposit_satang::text
+      {
+        partner_id: string;
+        total_satang: string;
+        deposit_satang: string;
+        commission_bps: number;
+      }[]
+    >`select listings.partner_id,bookings.total_satang::text,bookings.deposit_satang::text,bookings.commission_bps
       from rbc_go.bookings bookings join rbc_go.listings listings on listings.id=bookings.listing_id join rbc_go.partners partners on partners.id=listings.partner_id
       where bookings.id=${bookingId} and bookings.status='completed' and partners.status='active' for update of bookings`;
     if (!booking) throw new BookingError("booking_locked");
@@ -266,7 +265,7 @@ export async function payOutBooking(accountId: string, bookingId: string) {
       await tx`select id from rbc_go.refund_requests where booking_id=${bookingId} and status in ('requested','processing')`;
     if (pending) throw new BookingError("refund_in_progress");
     const [payment] =
-      await tx`select id from rbc_go.payment_attempts where booking_id=${bookingId} and status='succeeded'`;
+      await tx`select id from rbc_go.payment_attempts where booking_id=${bookingId} and status='succeeded' and livemode=${omiseMode() === "live"}`;
     if (!payment) throw new BookingError("payment_not_found");
     const [refunds] = await tx<
       { amount: string; deposit: string }[]
@@ -283,8 +282,14 @@ export async function payOutBooking(accountId: string, bookingId: string) {
       Number(booking.total_satang) -
       Number(booking.deposit_satang) -
       Math.max(0, Number(refunds.amount) - Number(refunds.deposit));
-    const amount = rental - Math.floor((rental * bps) / 10000);
+    const bps = booking.commission_bps;
+    const amount = splitRental(Math.max(0, rental), bps).partner;
     if (amount <= 0) throw new BookingError("invalid_price");
+    const [withdrawal] = await tx<
+      { amount_satang: string }[]
+    >`select amount_satang::text from rbc_go.partner_withdrawal_requests where booking_id=${bookingId}`;
+    if (withdrawal && Number(withdrawal.amount_satang) !== amount)
+      throw new BookingError("settlement_locked");
     const [payout] = await tx<
       { id: string }[]
     >`insert into rbc_go.payouts(booking_id,partner_id,recipient_id,amount_satang,commission_bps,initiated_by)
@@ -327,6 +332,15 @@ export async function reconcilePayout(
 ) {
   await requireStaff(accountId, true);
   await applyPayout(payoutId, await getOmiseTransfer(providerId));
+}
+
+export async function applyOmiseWebhookTransfer(providerId: string) {
+  const transfer = await getOmiseTransfer(providerId);
+  const payoutId = transfer.metadata?.payout_id;
+  if (!payoutId || !uuid.test(payoutId)) return;
+  const [payout] =
+    await getDb()`select id from rbc_go.payouts where id=${payoutId}`;
+  if (payout) await applyPayout(payoutId, transfer);
 }
 
 export async function listCustomerRefunds(

@@ -126,7 +126,7 @@ test(
           .find((value) => value.startsWith("rbc_go_session="))
           ?.split(";")[0];
         assert.ok(cookie, `${account.role} receives a session`);
-        const path = `/en/operations/${account.role === "support" ? "payments" : "partners"}`;
+        const path = `/en/operations/${account.role === "support" ? "payments" : account.role === "admin" ? "overview" : "partners"}`;
         assert.equal(response.status, 303);
         assert.equal(response.headers.get("location"), path);
         const workspace = await fetch(baseUrl + path, {

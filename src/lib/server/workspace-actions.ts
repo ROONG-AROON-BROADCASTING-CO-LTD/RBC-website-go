@@ -16,6 +16,10 @@ import {
 import { applyOmiseWebhookCharge } from "./booking-payments";
 import { dispatchNotifications } from "./dispatch-notifications";
 import {
+  requestPartnerWithdrawal,
+  setCommissionPolicy,
+} from "./business-finance";
+import {
   addAvailabilityBlock,
   removeAvailabilityBlock,
   saveListing,
@@ -36,6 +40,12 @@ export async function workspaceAction(
     : "th";
   try {
     switch (value("operation")) {
+      case "withdrawal-request":
+        await requestPartnerWithdrawal(account.id, value("bookingId"));
+        break;
+      case "commission-policy":
+        await setCommissionPolicy(account.id, value("percent"));
+        break;
       case "refund-request":
         await requestBookingRefund(
           account.id,
@@ -141,6 +151,10 @@ export async function workspaceAction(
         "This settlement is locked. Contact support to reconcile it.",
       refund_in_progress: "A refund is already being processed.",
       commission_unconfigured: "The commission policy has not been configured.",
+      invalid_commission:
+        "Enter a commission from 0 to 100%, with at most two decimal places.",
+      withdrawal_unavailable:
+        "This balance is not available for withdrawal or has already been requested.",
       deposit_unsettled:
         "Return the security deposit before paying out the booking.",
       recipient_unverified:

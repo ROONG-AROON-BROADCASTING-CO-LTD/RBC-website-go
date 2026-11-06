@@ -12,5 +12,5 @@ export function staffLoginPath(locale: string) {
 }
 
 export function staffWorkspacePath(role: StaffRole, locale: string) {
-  return `/${staffLocale(locale)}/operations/${role === "support" ? "payments" : "partners"}`;
+  return `/${staffLocale(locale)}/operations/${role === "support" ? "payments" : role === "reviewer" ? "partners" : "overview"}`;
 }

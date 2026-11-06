@@ -1,3 +1,5 @@
+import { Button } from "@/components/ui/button";
+import { LogOut } from "lucide-react";
 import { createTranslator } from "@/lib/i18n";
 import { partnerCategoryLabel } from "@/lib/partner-categories";
 import { redirect } from "next/navigation";
@@ -55,8 +57,8 @@ export default async function ApplyPage({
     application.status === "draft" ||
     application.status === "changes_requested";
   return (
-    <main className="mx-auto max-w-4xl px-4 py-10 md:py-16">
-      <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
+    <main className="business-theme partner-page mx-auto max-w-5xl px-4 py-8 md:px-8 md:py-10">
+      <div className="partner-hero mb-7 flex flex-wrap items-start justify-between gap-5">
         <div>
           <p className="text-sm font-bold tracking-widest text-primary">
             RBC GO PARTNERS
@@ -72,15 +74,13 @@ export default async function ApplyPage({
         </div>
         <form action={logoutPartner}>
           <input type="hidden" name="locale" value={locale} />
-          <button
-            type="submit"
-            className="text-sm font-semibold text-primary hover:underline"
-          >
+          <Button type="submit" variant="outline">
+            <LogOut data-icon="inline-start" />
             {t("Sign out of both areas")}
-          </button>
+          </Button>
         </form>
       </div>
-      <ol className="mb-7 grid gap-3 text-sm sm:grid-cols-3">
+      <ol className="partner-steps mb-7 grid gap-3 text-sm sm:grid-cols-3">
         <li className="rounded-2xl border bg-card p-4 font-semibold">
           {t("1. Account created \u2713")}
         </li>

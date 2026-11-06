@@ -35,7 +35,7 @@ export function ListingForm({
   return (
     <form
       action={action}
-      className="space-y-5 rounded-3xl border bg-card p-6 shadow-sm md:p-8"
+      className="partner-listing-form flex flex-col gap-5 rounded-2xl border bg-card p-6 shadow-sm md:p-8"
     >
       <input type="hidden" name="locale" value={locale} />
       {listing && <input type="hidden" name="listingId" value={listing.id} />}

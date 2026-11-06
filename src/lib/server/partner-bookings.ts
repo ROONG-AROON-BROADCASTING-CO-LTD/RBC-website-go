@@ -280,14 +280,19 @@ export async function decidePartnerBooking(
       if (conflict || block) throw new BookingError("dates_unavailable");
       const deposit = Number(booking.deposit_satang);
       const total = amount + deposit;
+      const [policy] = await tx<{ commission_bps: number }[]>`
+        select commission_bps from rbc_go.business_settings where id=true for share`;
+      if (!policy) throw new BookingError("commission_unconfigured");
       const price = {
         base_price_satang: booking.base_price_satang,
         quoted: true,
         rental_satang: amount,
         deposit_satang: deposit,
         total_satang: total,
+        commission_bps: policy.commission_bps,
       };
       await tx`update rbc_go.bookings set status = 'held', total_satang = ${total},
+      commission_bps = ${policy.commission_bps},
       price_snapshot = ${tx.json(price)}, hold_expires_at = now() + interval '48 hours',
       updated_at = now() where id = ${booking.id}`;
     });

@@ -72,8 +72,10 @@ function verifyImage(image: ListingInput["images"][number]) {
 
 export async function getActivePartner(accountId: string) {
   const sql = getDb();
-  const [partner] = await sql<{ id: string; business_name: string }[]>`
-    select partners.id, partners.business_name
+  const [partner] = await sql<
+    { id: string; business_name: string; role: string }[]
+  >`
+    select partners.id, partners.business_name,members.role
     from rbc_go.partner_members members
     join rbc_go.partners partners on partners.id = members.partner_id
     where members.account_id = ${accountId} and partners.status = 'active'
