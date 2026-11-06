@@ -1,3 +1,4 @@
+import { staffLoginPath } from "@/lib/staff-navigation";
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { ScreenRouter } from "@/components/rbc/screen-router";
@@ -70,7 +71,12 @@ export default async function Page({ params }: Props) {
   if (["partner", "wizard", "operations"].includes(slug[0])) {
     if (!process.env.DATABASE_URL) notFound();
     const account = await currentAccount();
-    if (!account) redirect(`/${locale}/partner-login`);
+    if (!account)
+      redirect(
+        slug[0] === "operations"
+          ? staffLoginPath(locale)
+          : `/${locale}/partner-login`,
+      );
     const sql = getDb();
     if (slug[0] === "operations") {
       const [staff] = await sql<{ role: string }[]>`

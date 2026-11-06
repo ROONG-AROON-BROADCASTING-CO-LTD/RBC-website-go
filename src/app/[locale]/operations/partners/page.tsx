@@ -1,8 +1,8 @@
 import { createTranslator } from "@/lib/i18n";
-import Link from "next/link";
 import { partnerCategoryLabel } from "@/lib/partner-categories";
 import { notFound, redirect } from "next/navigation";
-import { currentAccount } from "@/lib/server/auth";
+import { currentStaff } from "@/lib/server/staff-auth";
+import { staffLoginPath } from "@/lib/staff-navigation";
 import { getDb } from "@/lib/server/db";
 import { reviewApplication } from "./actions";
 type ApplicationRow = {
@@ -30,18 +30,10 @@ export default async function PartnerReviews({
   const { locale } = await params;
   const { error } = await searchParams;
   if (!process.env.DATABASE_URL) notFound();
-  const account = await currentAccount();
-  if (!account) redirect(`/${locale}/partner-login`);
+  const account = await currentStaff();
+  if (!account) redirect(staffLoginPath(locale));
   const sql = getDb();
-  const [staff] = await sql<
-    {
-      role: string;
-    }[]
-  >`
-    select role from rbc_go.staff_members where account_id = ${account.id}
-      and role in ('admin', 'reviewer')
-  `;
-  if (!staff) notFound();
+  if (account.role !== "admin" && account.role !== "reviewer") notFound();
   const applications = await sql<ApplicationRow[]>`
     select applications.id, applications.business_name, applications.status,
            applications.feedback, applications.submitted_at, applications.rental_categories,
@@ -72,24 +64,8 @@ export default async function PartnerReviews({
       <h1 className="mt-2 text-3xl font-bold">
         {t("Review partner applications")}
       </h1>
-      <nav className="mt-4 flex gap-4 text-sm font-semibold">
-        <Link
-          href={`/${locale}/operations/payments`}
-          className="text-primary hover:underline"
-        >
-          {t("Payments and settlements")}
-        </Link>
-        <span>{t("Partner applications")}</span>
-        <Link
-          href={`/${locale}/operations/listings`}
-          className="text-primary hover:underline"
-        >
-          {t("Vehicle listings")}
-        </Link>
-      </nav>
       <p className="mt-2 text-muted-foreground">
-        {applications.length}
-        {t("awaiting review")}
+        {applications.length} {t("awaiting review")}
       </p>
       {error && (
         <p

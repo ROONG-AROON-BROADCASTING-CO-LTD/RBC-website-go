@@ -359,5 +359,12 @@
   "Select at least one rental category.": "กรุณาเลือกประเภทยานพาหนะอย่างน้อย 1 ประเภท",
   "Select rental categories above to see the documents for each vehicle type.": "เลือกประเภทยานพาหนะด้านบนเพื่อดูเอกสารที่ต้องเตรียมสำหรับแต่ละประเภท",
   "Rental categories": "ประเภทยานพาหนะที่ปล่อยเช่า",
-  "Not specified in the original application": "ใบสมัครเดิมยังไม่ได้ระบุประเภท"
+  "Not specified in the original application": "ใบสมัครเดิมยังไม่ได้ระบุประเภท",
+  "Staff sign in": "เข้าสู่ระบบทีมงาน",
+  "Staff navigation": "เมนูทีมงาน",
+  "Review partner applications, vehicle listings and operations.": "ตรวจใบสมัครพาร์ทเนอร์ ตรวจประกาศยานพาหนะ และจัดการงานหลังบ้าน",
+  "This account does not have staff access. Contact your administrator.": "บัญชีนี้ยังไม่มีสิทธิ์ทีมงาน กรุณาติดต่อผู้ดูแลระบบ",
+  "Use an account that has been granted staff access by your administrator.": "ใช้บัญชีที่ผู้ดูแลระบบกำหนดสิทธิ์ทีมงานให้แล้ว",
+  "Signing in...": "กำลังเข้าสู่ระบบ…",
+  "Back to website": "กลับหน้าเว็บไซต์"
 }

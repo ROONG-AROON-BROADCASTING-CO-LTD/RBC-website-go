@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { currentAccount } from "@/lib/server/auth";
+import { currentStaff } from "@/lib/server/staff-auth";
+import { staffLoginPath } from "@/lib/staff-navigation";
 import {
   listSettlementWorkspace,
   requireStaff,
@@ -28,8 +29,8 @@ export default async function PaymentsWorkspace({
 }) {
   const { locale } = await params;
   if (!process.env.DATABASE_URL) notFound();
-  const account = await currentAccount();
-  if (!account) redirect(`/${locale}/partner-login`);
+  const account = await currentStaff();
+  if (!account) redirect(staffLoginPath(locale));
   let role, workspace;
   try {
     role = (await requireStaff(account.id)).role;
@@ -59,16 +60,6 @@ export default async function PaymentsWorkspace({
   );
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-10">
-      <div className="flex flex-wrap gap-3">
-        <Button asChild variant="outline">
-          <Link href={`/${locale}/operations/partners`}>
-            {t("Partner applications")}
-          </Link>
-        </Button>
-        <Button asChild variant="outline">
-          <Link href={`/${locale}/operations/listings`}>{t("Listings")}</Link>
-        </Button>
-      </div>
       <h1 className="text-3xl font-bold">{t("Payments and settlements")}</h1>
       {admin && (
         <Card>
