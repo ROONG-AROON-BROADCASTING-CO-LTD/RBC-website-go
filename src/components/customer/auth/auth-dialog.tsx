@@ -52,8 +52,8 @@ export default function CustomerAuthDialog({
     : challenge
       ? "Verify your email"
       : registering
-        ? "Create your account"
-        : "Welcome back";
+        ? "Create a customer account"
+        : "Customer sign in";
 
   return (
     <Dialog
@@ -236,6 +236,18 @@ export default function CustomerAuthDialog({
             </p>
           </>
         )}
+        <div className="rounded-xl bg-muted p-3 text-center text-sm">
+          <p className="text-muted-foreground">
+            {t("Want to list your vehicles?")}
+          </p>
+          <Link
+            href={href("partner-login")}
+            onClick={onClose}
+            className="font-semibold text-primary underline-offset-4 hover:underline"
+          >
+            {t("Partner sign in")}
+          </Link>
+        </div>
         <div className="border-t pt-4 text-center text-[11px] leading-6 text-muted-foreground">
           <p>{t("Your sign-in is verified securely on the server.")}</p>
           <div className="flex justify-center gap-3">

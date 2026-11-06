@@ -1,5 +1,7 @@
 import {
   CalendarDays,
+  BriefcaseBusiness,
+  FileCheck2,
   CreditCard,
   Heart,
   MessageCircle,
@@ -17,4 +19,13 @@ export const accountPrimaryLinks = [
 export const accountSecondaryLinks = [
   { id: "payments", label: "Payments", icon: CreditCard },
   { id: "messages", label: "Messages", icon: MessageCircle },
+] as const;
+
+export const partnerAccountLinks = [
+  {
+    path: "partner/overview",
+    label: "Partner portal",
+    icon: BriefcaseBusiness,
+  },
+  { path: "apply", label: "Application status", icon: FileCheck2 },
 ] as const;

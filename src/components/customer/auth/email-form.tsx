@@ -42,10 +42,10 @@ export function CustomerEmailForm({
   return (
     <main className="mx-auto max-w-lg px-4 py-12 md:py-20">
       <h1 className="text-3xl font-semibold">
-        {t(registering ? "Create account with email" : "Sign in with email")}
+        {t(registering ? "Create a customer account" : "Customer sign in")}
       </h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        {t("Use your email and password to access your account.")}
+        {t("Sign in to book vehicles and manage your trips.")}
       </p>
       {authError && (
         <p
@@ -97,7 +97,7 @@ export function CustomerEmailForm({
             </p>
           )}
           <Button type="submit" size="lg" disabled={!enabled || pending}>
-            {t(registering ? "Create account" : "Sign In")}
+            {t(registering ? "Create a customer account" : "Customer sign in")}
           </Button>
         </FieldGroup>
       </form>
@@ -120,6 +120,17 @@ export function CustomerEmailForm({
           {t(registering ? "Sign In" : "Create an account")}
         </Link>
       </p>
+      <div className="mt-6 rounded-xl bg-muted p-4 text-center text-sm">
+        <p className="text-muted-foreground">
+          {t("Want to list your vehicles?")}
+        </p>
+        <Link
+          href={`/${locale}/partner-login`}
+          className="font-semibold text-primary underline-offset-4 hover:underline"
+        >
+          {t("Partner sign in")}
+        </Link>
+      </div>
     </main>
   );
 }

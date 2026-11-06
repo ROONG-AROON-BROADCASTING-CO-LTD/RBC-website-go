@@ -1,5 +1,7 @@
 import { createHash } from "node:crypto";
 import { getDb } from "./db";
+import type { Category } from "../domain";
+import { parsePartnerCategories } from "../partner-categories";
 
 export type ApplicationStatus =
   | "draft"
@@ -13,6 +15,7 @@ export type PartnerApplication = {
   id: string;
   owner_account_id: string;
   business_name: string;
+  rental_categories: Category[];
   status: ApplicationStatus;
   feedback: string | null;
   submitted_at: Date | null;
@@ -29,7 +32,7 @@ export class PartnerApplicationError extends Error {
 export async function getPartnerApplication(accountId: string) {
   const sql = getDb();
   const [application] = await sql<PartnerApplication[]>`
-    select id, owner_account_id, business_name, status, feedback,
+    select id, owner_account_id, business_name, rental_categories, status, feedback,
            submitted_at, reviewed_at
     from rbc_go.partner_applications
     where owner_account_id = ${accountId}
@@ -52,7 +55,11 @@ export async function getPartnerDocuments(accountId: string) {
 export async function savePartnerDraft(
   accountId: string,
   businessName: string,
+  rentalCategories: readonly unknown[],
 ) {
+  const categories = parsePartnerCategories(rentalCategories);
+  if (!categories)
+    throw new PartnerApplicationError("invalid_rental_categories");
   const name = businessName.trim();
   if (name.length < 2 || name.length > 200) {
     throw new PartnerApplicationError("invalid_business_name");
@@ -61,13 +68,14 @@ export async function savePartnerDraft(
   const sql = getDb();
   const [application] = await sql<PartnerApplication[]>`
     insert into rbc_go.partner_applications as application
-      (owner_account_id, business_name)
-    values (${accountId}, ${name})
+      (owner_account_id, business_name, rental_categories)
+    values (${accountId}, ${name}, ${sql.array(categories, 25)}::text[])
     on conflict (owner_account_id) do update
       set business_name = excluded.business_name,
+          rental_categories = excluded.rental_categories,
           updated_at = now()
       where application.status in ('draft', 'changes_requested')
-    returning id, owner_account_id, business_name, status, feedback,
+    returning id, owner_account_id, business_name, rental_categories, status, feedback,
               submitted_at, reviewed_at
   `;
   if (!application) {
@@ -154,8 +162,10 @@ export async function addPartnerDocument(
 export async function submitPartnerApplication(accountId: string) {
   const sql = getDb();
   return sql.begin(async (tx) => {
-    const [application] = await tx<{ id: string; status: ApplicationStatus }[]>`
-      select id, status from rbc_go.partner_applications
+    const [application] = await tx<
+      { id: string; status: ApplicationStatus; rental_categories: Category[] }[]
+    >`
+      select id, status, rental_categories from rbc_go.partner_applications
       where owner_account_id = ${accountId} for update
     `;
     if (!application) {
@@ -163,6 +173,9 @@ export async function submitPartnerApplication(accountId: string) {
     }
     if (!["draft", "changes_requested"].includes(application.status)) {
       throw new PartnerApplicationError("application_locked");
+    }
+    if (!parsePartnerCategories(application.rental_categories)) {
+      throw new PartnerApplicationError("invalid_rental_categories");
     }
     const [documents] = await tx<{ count: number }[]>`
       select count(*)::integer as count from rbc_go.partner_documents
@@ -176,7 +189,7 @@ export async function submitPartnerApplication(accountId: string) {
       set status = 'submitted', submitted_at = now(),
           feedback = null, updated_at = now()
       where id = ${application.id}
-      returning id, owner_account_id, business_name, status, feedback,
+      returning id, owner_account_id, business_name, rental_categories, status, feedback,
                 submitted_at, reviewed_at
     `;
     return updated;
@@ -202,7 +215,7 @@ export async function reviewPartnerApplication(
     if (!staff) throw new PartnerApplicationError("forbidden");
 
     const [application] = await tx<PartnerApplication[]>`
-      select id, owner_account_id, business_name, status, feedback,
+      select id, owner_account_id, business_name, rental_categories, status, feedback,
              submitted_at, reviewed_at
       from rbc_go.partner_applications
       where id = ${applicationId} for update
@@ -220,7 +233,7 @@ export async function reviewPartnerApplication(
           reviewed_at = now(), reviewed_by = ${reviewerAccountId},
           updated_at = now()
       where id = ${application.id}
-      returning id, owner_account_id, business_name, status, feedback,
+      returning id, owner_account_id, business_name, rental_categories, status, feedback,
                 submitted_at, reviewed_at
     `;
 

@@ -1,25 +1,45 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronDown, LogOut, UserRound } from "lucide-react";
+import {
+  BriefcaseBusiness,
+  ChevronDown,
+  LogOut,
+  UserRound,
+} from "lucide-react";
 import { DropdownMenu } from "radix-ui";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useCustomerAuth } from "@/components/customer/auth/provider";
 import { useRBC } from "@/components/rbc/provider";
 import { cn } from "@/lib/utils";
-import { accountPrimaryLinks } from "./account-navigation";
+import { accountPrimaryLinks, partnerAccountLinks } from "./account-navigation";
 
-export function AccountMenu({ glass }: { glass: boolean }) {
+export function AccountMenu({
+  glass,
+  area = "customer",
+}: {
+  glass: boolean;
+  area?: "customer" | "partner";
+}) {
   const { customer, signOut } = useCustomerAuth();
   const { t, href } = useRBC();
   if (!customer) return null;
+  const partner = area === "partner";
+  const label = partner ? "Partner account" : "Customer account";
+  const AccountIcon = partner ? BriefcaseBusiness : UserRound;
+  const links = partner
+    ? partnerAccountLinks
+    : accountPrimaryLinks.map(({ id, ...link }) => ({
+        ...link,
+        path: `account/${id}`,
+      }));
 
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
         <Button
-          aria-label={t("My account")}
+          aria-label={t(label)}
           className={cn(
             "hidden min-w-32 gap-2 rounded-xl font-semibold md:inline-flex",
             glass
@@ -27,8 +47,8 @@ export function AccountMenu({ glass }: { glass: boolean }) {
               : "bg-white text-navy hover:bg-white/90",
           )}
         >
-          <UserRound data-icon="inline-start" />
-          {t("My account")}
+          <AccountIcon data-icon="inline-start" />
+          {t(label)}
           <ChevronDown data-icon="inline-end" />
         </Button>
       </DropdownMenu.Trigger>
@@ -57,11 +77,14 @@ export function AccountMenu({ glass }: { glass: boolean }) {
             </div>
           </div>
           <DropdownMenu.Separator className="my-1 h-px bg-border" />
+          <DropdownMenu.Label className="px-3 py-2 text-xs font-semibold text-muted-foreground">
+            {t(label)}
+          </DropdownMenu.Label>
           <DropdownMenu.Group>
-            {accountPrimaryLinks.map(({ id, label, icon: Icon }) => (
-              <DropdownMenu.Item key={id} asChild>
+            {links.map(({ path, label, icon: Icon }) => (
+              <DropdownMenu.Item key={path} asChild>
                 <Link
-                  href={href(`account/${id}`)}
+                  href={href(path)}
                   className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm outline-none transition-colors focus:bg-accent hover:bg-accent"
                 >
                   <Icon className="size-4 text-muted-foreground" />
@@ -71,13 +94,15 @@ export function AccountMenu({ glass }: { glass: boolean }) {
             ))}
           </DropdownMenu.Group>
           <Separator className="my-2" />
-          <DropdownMenu.Item
-            onSelect={() => void signOut()}
-            className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm outline-none transition-colors focus:bg-accent hover:bg-accent"
-          >
-            <LogOut className="size-4 text-muted-foreground" />
-            {t("Sign out")}
-          </DropdownMenu.Item>
+          <DropdownMenu.Group>
+            <DropdownMenu.Item
+              onSelect={() => void signOut()}
+              className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm outline-none transition-colors focus:bg-accent hover:bg-accent"
+            >
+              <LogOut className="size-4 text-muted-foreground" />
+              {t("Sign out of both areas")}
+            </DropdownMenu.Item>
+          </DropdownMenu.Group>
         </DropdownMenu.Content>
       </DropdownMenu.Portal>
     </DropdownMenu.Root>

@@ -1,6 +1,6 @@
 "use client";
 import { useRBC } from "@/components/rbc/provider";
-import { useActionState } from "react";
+import { useActionState, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -11,6 +11,8 @@ import {
 } from "@/components/ui/field";
 import { submitPartner, type FormResult } from "@/lib/server/partner-actions";
 import { PartnerDocumentGuidance } from "./document-guidance";
+import { PartnerCategorySelect } from "./category-select";
+import type { Category } from "@/lib/domain";
 const initial: FormResult = { error: "" };
 const errors: Record<string, string> = {
   invalid_business_name: "Enter a business name of 2\u2013200 characters.",
@@ -23,14 +25,17 @@ const errors: Record<string, string> = {
   invalid_file_name: "Invalid file name.",
   application_locked: "This application is already under review.",
   sign_in_required: "Please sign in again.",
+  invalid_rental_categories: "Select at least one rental category.",
 };
 export function PartnerApplicationForm({
   locale,
   businessName,
   documents,
+  rentalCategories,
 }: {
   locale: string;
   businessName: string;
+  rentalCategories: Category[];
   documents: {
     id: string;
     file_name: string;
@@ -38,9 +43,24 @@ export function PartnerApplicationForm({
 }) {
   const { t } = useRBC();
   const [state, action, pending] = useActionState(submitPartner, initial);
+  const [business, setBusiness] = useState(businessName);
+  const [selectedCategories, setSelectedCategories] =
+    useState(rentalCategories);
+  const [categoryError, setCategoryError] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
   return (
     <form
       action={action}
+      ref={formRef}
+      onSubmit={(event) => {
+        if (!selectedCategories.length) {
+          event.preventDefault();
+          setCategoryError(true);
+          formRef.current
+            ?.querySelector<HTMLButtonElement>("#partner-categories")
+            ?.focus();
+        }
+      }}
       className="flex flex-col gap-6 rounded-3xl border bg-card p-6 shadow-sm md:p-8"
     >
       <input type="hidden" name="locale" value={locale} />
@@ -52,7 +72,8 @@ export function PartnerApplicationForm({
           <Input
             id="partner-business"
             name="business"
-            defaultValue={businessName}
+            value={business}
+            onChange={(event) => setBusiness(event.target.value)}
             required
             minLength={2}
             maxLength={200}
@@ -64,11 +85,20 @@ export function PartnerApplicationForm({
             )}
           </FieldDescription>
         </Field>
+        <PartnerCategorySelect
+          value={selectedCategories}
+          onChange={(value) => {
+            setSelectedCategories(value);
+            setCategoryError(false);
+          }}
+          invalid={categoryError}
+          t={t}
+        />
         <Field>
           <FieldLabel htmlFor="partner-documents">
             {t("Applicant and vehicle documents")}
           </FieldLabel>
-          <PartnerDocumentGuidance t={t} />
+          <PartnerDocumentGuidance t={t} categories={selectedCategories} />
           <Input
             id="partner-documents"
             name="documents"
