@@ -1,5 +1,6 @@
 import postgres from "postgres";
 import { readdir } from "node:fs/promises";
+import { databaseSslOptions } from "../src/lib/server/database-ssl.mjs";
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
@@ -7,6 +8,7 @@ if (!connectionString) {
 }
 
 const sql = postgres(connectionString, {
+  ...databaseSslOptions(connectionString),
   max: 1,
   connect_timeout: 10,
   prepare: false,
