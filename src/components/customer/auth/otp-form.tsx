@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { ArrowLeft, ArrowRight, Smartphone } from "lucide-react";
+import { useEffect, useState, useTransition } from "react";
+import { ArrowLeft, ArrowRight, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Field,
@@ -11,24 +11,23 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { useRBC } from "@/components/rbc/provider";
-import { validateDemoOtp } from "@/lib/customer-auth";
 
 export function OtpForm({
-  phone,
-  expiresAt,
+  email,
   onBack,
-  onVerified,
+  verify,
+  resend,
 }: {
-  phone: string;
-  expiresAt: number;
+  email: string;
   onBack: () => void;
-  onVerified: () => void;
+  verify: (code: string) => Promise<string>;
+  resend: () => Promise<string>;
 }) {
   const { t } = useRBC();
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
-  const [remaining, setRemaining] = useState(30);
-  const [expiry, setExpiry] = useState(expiresAt);
+  const [remaining, setRemaining] = useState(60);
+  const [pending, start] = useTransition();
   useEffect(() => {
     const interval = setInterval(
       () => setRemaining((value) => Math.max(0, value - 1)),
@@ -41,29 +40,23 @@ export function OtpForm({
       noValidate
       onSubmit={(event) => {
         event.preventDefault();
-        const result = validateDemoOtp(code, expiry);
-        if (result) {
-          setError(
-            result === "expired"
-              ? "The code has expired. Request a new code."
-              : "Incorrect code. Use the demo code 123456.",
-          );
-          return;
-        }
-        onVerified();
+        start(async () => {
+          setError(await verify(code));
+        });
       }}
     >
       <FieldGroup>
         <div className="flex items-center gap-3 rounded-xl bg-secondary p-4">
-          <Smartphone className="size-5 shrink-0 text-primary" />
-          <div>
-            <p className="font-semibold">{phone}</p>
+          <Mail className="size-5 shrink-0 text-primary" />
+          <div className="min-w-0">
+            <p className="break-all font-semibold">{email}</p>
             <button
               type="button"
+              disabled={pending}
               className="mt-1 text-xs text-primary underline"
               onClick={onBack}
             >
-              {t("Change phone number")}
+              {t("Change email address")}
             </button>
           </div>
         </div>
@@ -93,26 +86,42 @@ export function OtpForm({
           id="customer-otp-help"
           className="rounded-lg bg-ocean-soft px-3 py-2 text-xs leading-6 text-ocean"
         >
-          {t("Demo code: 123456. No SMS is sent.")}
+          {t("Check your inbox and spam folder. Never share your code.")}
         </p>
-        <Button type="submit" size="lg" className="w-full">
+        <Button
+          type="submit"
+          size="lg"
+          className="w-full"
+          disabled={pending || code.length !== 6}
+        >
           {t("Verify and continue")}
           <ArrowRight data-icon="inline-end" />
         </Button>
         <div className="flex items-center justify-between gap-3 text-xs">
-          <Button variant="ghost" size="sm" onClick={onBack}>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            disabled={pending}
+            onClick={onBack}
+          >
             <ArrowLeft data-icon="inline-start" />
             {t("Back")}
           </Button>
           <Button
+            type="button"
             variant="link"
             size="sm"
-            disabled={remaining > 0}
+            disabled={remaining > 0 || pending}
             onClick={() => {
-              setExpiry(Date.now() + 300000);
-              setCode("");
-              setError("");
-              setRemaining(30);
+              start(async () => {
+                const error = await resend();
+                setError(error);
+                if (!error) {
+                  setCode("");
+                  setRemaining(60);
+                }
+              });
             }}
           >
             {t("Resend code")}

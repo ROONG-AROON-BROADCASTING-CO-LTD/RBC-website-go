@@ -8,8 +8,11 @@ export const metadata: Metadata = {
     template: "%s · RBC GO",
   },
   description:
-    "ค้นหาและจองรถ เรือยอชต์ และเครื่องบินส่วนตัวกับ RBC GO · Travel marketplace demo",
-  robots: { index: false, follow: false },
+    "ค้นหาและส่งคำขอจองรถ เรือยอชต์ และเครื่องบินส่วนตัวจากพาร์ทเนอร์ RBC GO",
+  robots: {
+    index: process.env.ENABLE_PUBLIC_INDEXING === "true",
+    follow: process.env.ENABLE_PUBLIC_INDEXING === "true",
+  },
 };
 export default function RootLayout({
   children,

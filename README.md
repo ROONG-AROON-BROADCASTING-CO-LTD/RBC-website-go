@@ -1,159 +1,189 @@
-# RBC GO — Next.js + Tailwind CSS + shadcn/ui
+# RBC GO
 
-เว็บต้นแบบที่รันได้จริงสำหรับ RBC GO พร้อมภาษาไทย อังกฤษ และจีนตัวย่อ ย้ายจากต้นแบบ HTML เดิมมาเป็น React components และ Next.js App Router โดยใช้ Tailwind utility classes ใน `className` และคอมโพเนนต์ shadcn/ui (Radix)
+Next.js 16.4.3 / React 19.3 / PostgreSQL พร้อม UI ไทย อังกฤษ และจีนตัวย่อ ใช้ npm และ Node.js 22 ขึ้นไป
 
-> **สถานะปัจจุบัน:** ยังเป็น frontend demo ไม่ควรเปิดรับการจองหรือชำระเงินจริง ดูข้อจำกัดและงานที่ต้องทำก่อนเปิดใช้งานจริงในหัวข้อ “ขอบเขตของเวอร์ชันนี้”
+ระบบบัญชี ใบสมัครพาร์ทเนอร์ รายการยานพาหนะ คำขอจอง ราคา การชำระเงิน ข้อความ รายการที่บันทึก รีวิว และปฏิทิน ใช้ข้อมูลฝั่งเซิร์ฟเวอร์ แยกสิทธิ์ตามบัญชี ข้อมูลยานพาหนะตัวอย่างถูกนำออกจากเว็บแล้ว หน้าแรก/ค้นหาใช้เฉพาะรายการที่อนุมัติจากฐานข้อมูล เส้นทางเดโมเดิมเปิดไม่ได้แม้มีค่า `ENABLE_DEMO` เก่าค้างอยู่
 
-## สาขา Git
-
-- `dev` — สาขาหลักสำหรับแก้ไขและทดสอบงานใหม่ เปิด pull request จากสาขางานเข้าที่นี่
-- `main` — สาขาสำหรับ release และเชื่อมระบบ deploy production เมื่อระบบหลังบ้านและการชำระเงินจริงพร้อมแล้ว รวมงานที่ผ่านการตรวจจาก `dev` เท่านั้น
-
-การมี production build ไม่ได้แปลว่าระบบธุรกิจพร้อมใช้งานจริง ขณะนี้ยังไม่ควรตั้งค่า auto-deploy `main` เป็นเว็บสาธารณะ
+**สถานะ 6 พฤศจิกายน 2026:** ทดสอบชำระ คืนเงิน และ payout กับ Omise sandbox จริงแล้ว ไม่มีการใช้เงินจริง ระบบส่งอีเมลรองรับ Gmail/Resend และเปลี่ยนการเข้าสู่ระบบจาก SMS เป็น OTP อีเมลแล้ว ตั้งค่าผู้ส่ง Gmail แล้ว ตรวจ TLS/authentication ผ่าน ส่งอีเมลทดสอบเข้าบัญชีผู้ส่งเองผ่าน adapter ของโปรเจกต์ และเจ้าของบัญชียืนยันได้รับจริงแล้ว ยังไม่ได้ทดสอบรับ OTP/verification/reset/notification ทุกชนิดผ่านกล่องจดหมายจริง ยังไม่เปิดใช้งานจริงครบทุกบริการและยังไม่ได้ deploy สู่โดเมนสาธารณะ
 
 ## เริ่มใช้งาน
 
-ต้องมี Node.js 20.9 ขึ้นไป (ตรวจสอบด้วย Node.js 22.14.0)
-
-```bash
+```sh
 npm ci
+cp .env.example .env.local
+# ตั้ง DATABASE_URL และค่าบริการที่ต้องใช้ โดยไม่ใส่ secret ลง Git
+npm run db:migrate:local
 npm run dev
 ```
 
-เปิด http://localhost:3000 — จะเข้าสู่ `/th` เป็นค่าเริ่มต้น กด EN เพื่อเปลี่ยนเป็นภาษาอังกฤษ เส้นทาง `/th/...` และ `/en/...` ใช้งานแยกตามภาษา
+เปิด http://localhost:3000 (ค่าเริ่มต้น `/th`) เส้นทางภาษาเป็น `/th`, `/en`, `/zh`
 
-สร้างและเปิด production build:
-
-```bash
+```sh
 npm run build
 npm run start
 ```
 
-ตรวจโค้ดและตรรกะ:
+Build สร้าง standalone server และคัดลอก static assets ผ่าน `postbuild` แล้ว `npm run start` จะรัน standalone server โดยตรง รองรับ `-p` และ `-H` เช่น `npm run start -- -p 3100 -H localhost`
 
-```bash
+## ตรวจระบบ
+
+```sh
+npm run lint
 npm run typecheck
 npm test
+npm run test:integration
+npm run setup:check
 ```
 
-โปรเจกต์เปิด watch polling อัตโนมัติผ่าน `scripts/dev.mjs` เพื่อรองรับข้อจำกัด file watcher บน macOS และตั้ง Webpack กับ Tailwind PostCSS ไว้แล้ว ส่วนประกอบ UI ทั้งหมดอยู่ในซอร์ส สามารถแก้ได้โดยตรง
+`npm test` ข้าม integration tests ถ้าไม่มี test environment ส่วน `npm run test:integration` จะ:
 
-## เทคโนโลยี
+1. ใช้ `RBC_GO_TEST_DATABASE_URL` ที่ชื่อฐานข้อมูลจบ `_test`; หากไม่ระบุ จะใช้ `rbc_go_test` บน PostgreSQL ในเครื่องตาม connection เดิมเท่านั้น
+2. ติดตั้ง migration ในฐานทดสอบก่อนทุกครั้ง โดยไม่แก้ฐานหลัก
+3. Build และเปิด standalone server ที่ `http://localhost:3101`
+4. รันทดสอบทั้งหมด แล้วปิดเซิร์ฟเวอร์
 
-- Next.js 16.4.3 · App Router · TypeScript
-- React 19.3.0
-- Tailwind CSS 4 ผ่าน PostCSS; layout และ responsive styles อยู่ใน `className`
-- shadcn/ui: Button, Card, Field, Input, Select, Badge, Alert, Empty, Separator, Sheet, Dialog, Checkbox, ToggleGroup, Table, Textarea, Sonner, Skeleton
-- ภาษาอังกฤษใช้ Inter Variable; ภาษาไทยใช้ Thonburi → Tahoma ตามฟอนต์ที่มีในเครื่อง พร้อม Noto Sans Thai Variable ที่บันเดิลไว้เป็น fallback ไม่ต้องโหลดฟอนต์จาก Google ตอน build
-- รูปภาพอยู่ใน `public/images/` และแสดงผ่าน `next/image`
+สร้างฐาน `rbc_go_test` ไว้ก่อน และใช้ PostgreSQL 14+ พร้อมสิทธิ์ติดตั้ง `btree_gist` ชุด integration ปิดค่าบริการส่งข้อความและแทนที่ Omise keys ด้วยค่าทดสอบ เพื่อไม่ส่งข้อความหรือธุรกรรมออกไปโดยไม่ตั้งใจ การทดสอบกับ Omise sandbox จริงทำแยกต่างหาก
 
-`globals.css` เก็บเฉพาะสี ฟอนต์ design tokens และ base styles สีหลักตรงกับบรีฟ: #081321, #F4F6F8, #FFFFFF, #334B78, #172338, #D9DFE7
+`/api/health` คืน 200 เมื่อเชื่อมฐานข้อมูลและมี migration ครบอย่างน้อย 11; คืน 503 หากยังไม่พร้อม `npm run setup:check` ตรวจเฉพาะความครบของ environment โดยไม่แสดงค่าลับและไม่รับรองสถานะบัญชีผู้ให้บริการ
 
-## โครงสร้าง
+## เส้นทางใช้งาน
 
-```text
-src/app/
-  layout.tsx                 root layout และ metadata
-  page.tsx                   redirect ไปภาษาไทย
-  [locale]/layout.tsx         provider และ navigation
-  [locale]/[[...slug]]/       App Router พร้อมตรวจ route ที่อนุญาต
-  error.tsx / not-found.tsx   หน้าผิดพลาด
-src/components/rbc/
-  provider.tsx               state และ localStorage แบบมี version
-  shell.tsx                  ประกอบ layout หลักและแสดงสถานะของเดโม
-  discovery.tsx              หน้าแรก ผลค้นหา และรายละเอียดยานพาหนะ
-  search-panel.tsx           ฟอร์มค้นหาตามหมวดยานพาหนะ
-  booking.tsx                ข้อมูลผู้เดินทาง ยืนยันการจอง และใบเสร็จ
-  design.tsx                 experiences, help, design guide
-  common.tsx                 คอมโพเนนต์ใช้งานร่วมกัน
-src/components/layout/
-  navbar.tsx                 Navbar, เมนูมือถือ และ Sign In
-  footer.tsx                 Footer
-  workspace-shell.tsx        โครงหน้าและเมนูของพื้นที่ทำงานแต่ละบทบาท
-src/components/customer/     บัญชีลูกค้า แยก bookings, saved, payments, messages, profile
-src/components/partner/      พอร์ทัล ใบสมัคร wizard ปฏิทิน และแท็บของพาร์ตเนอร์
-src/components/operations/   ภาพรวม ประวัติ ตารางข้อมูล และ drawer จัดการของทีมงาน
-src/components/booking/
-  checkout.tsx               จอง 3 ขั้น: ข้อมูล → แพ็กเกจ → ชำระเงิน
-  package-picker.tsx         แพ็กเกจเสริมตามหมวดยานพาหนะ
-  payment-gateway.tsx        หน้ากรอกบัตรทดสอบและ PromptPay จำลอง
-src/components/ui/           ซอร์ส shadcn/ui
-src/lib/domain.ts            ประเภทข้อมูล ราคาและกฎการจอง
-src/lib/inventory.json       ยานพาหนะตัวอย่าง
-src/lib/i18n.ts             ตัวเรียกคำแปลและรูปแบบตัวเลข/วันที่
-src/lib/translations/th/    คำแปลไทยแยกตามหน้าและส่วนงาน
-public/images/              ภาพประกอบจากต้นแบบเดิม
-tests/booking.test.ts       ราคา แพ็กเกจ การจองซ้ำ และสถานะสำคัญ
-tests/payment.test.ts       การตรวจข้อมูลบัตรทดสอบ
+| งาน | เส้นทางหลังภาษา |
+| --- | --- |
+| ค้นหายานพาหนะจริง | `/search/boats`, `/search/motorcycles`, `/search/cars`, `/search/jets` |
+| รายละเอียดยานพาหนะและขอจอง | `/listing/:id` |
+| ข้อมูลลูกค้า | `/account/profile` |
+| การจอง ชำระเงิน บันทึก รีวิว ข้อความ | `/account/bookings`, `/account/payments`, `/account/saved`, `/account/reviews`, `/account/messages` |
+| รายละเอียดคำขอและชำระเงิน | `/partner-bookings/:id` |
+| ใบรับชำระเงินจากรายการที่ยืนยันแล้ว | `/partner-bookings/:id/receipt` |
+| ข้อความเกี่ยวกับการจอง | `/messages/:bookingId` |
+| อีเมล login/register | `/email`, `/email?mode=register` |
+| กู้รหัสผ่านและยืนยันอีเมล | `/account-access` และลิงก์ที่ส่งทางอีเมล |
+| สมัคร/เข้าสู่ระบบพาร์ทเนอร์ | `/partner-signup`, `/partner-login` |
+| ยื่นเอกสารธุรกิจ | `/apply` |
+| รายการและคำขอของพาร์ทเนอร์ | `/partner/overview` |
+| วันปิดรับจอง | `/partner/availability` |
+| ประวัติรับชำระและ payout ของพาร์ทเนอร์ | `/partner/earnings` |
+| ตรวจใบสมัครและยานพาหนะ | `/operations/partners`, `/operations/listings` |
+| การจอง คืนเงิน บัญชีรับเงิน และ payout | `/operations/payments` |
+| วิธีจอง การยกเลิก ข้อมูล และการติดต่อ | `/help` |
+
+เส้นทางเดิมของทีมงานจะไป workspace จริง ไม่มีการอนุมัติหรือจ่ายเงินจำลองในพื้นที่ที่เปิดเป็นค่าเริ่มต้น
+
+## บัญชีและสิทธิ์
+
+- อีเมล/รหัสผ่านใช้ PostgreSQL, scrypt และ session cookie แบบ HttpOnly; cookie ใช้ Secure ใน production
+- ลิงก์ยืนยันอีเมล/ตั้งรหัสผ่านใหม่หมดอายุ 30 นาที ใช้ได้ครั้งเดียว มี cooldown และจำกัดจำนวนคำขอ การตั้งรหัสผ่านใหม่ยกเลิก sessions เดิม
+- Google OAuth ตรวจลายเซ็น ID token, issuer, audience, expiry และ nonce ฝั่งเซิร์ฟเวอร์ ต้องตั้ง callback ให้ตรงกับ environment ใน Google Cloud Console ข้อมูลเดิมระบุว่า Google project ยังเป็น Testing; ต้องตรวจ Audience/Publishing ก่อนเปิดให้ลูกค้าทั่วไป
+- OTP อีเมลเป็นวิธีหลักแทน SMS: สุ่มรหัส 6 หลัก เก็บเฉพาะ HMAC อายุ 10 นาที ใช้ครั้งเดียว ลองได้ 5 ครั้ง ส่งซ้ำหลัง 60 วินาที สูงสุด 5 ครั้ง/อีเมล/ชั่วโมง, 5 ครั้ง/client/15 นาที และ 100 ครั้งรวม/ชั่วโมง เก็บ challenge ใน cookie แบบ HttpOnly สร้างบัญชีหรือบันทึก email_verified_at หลังรหัสถูกต้องเท่านั้น เบอร์โทรเป็นข้อมูลติดต่อ ไม่เพิ่ม phone_verified_at
+- ไม่เชื่อมบัญชี email/Google/phone เข้าด้วยกันโดยอัตโนมัติ
+- ผู้ตรวจใบสมัคร/รายการต้องเป็น `reviewer` หรือ `admin`; งานคืนเงิน ผู้รับเงิน และ payout อนุญาตเฉพาะ `admin`
+- ผู้ดูแลฐานข้อมูลแต่งตั้ง staff ที่ตรวจสอบแล้วผ่าน `rbc_go.staff_members` ไม่มีปุ่มแต่งตั้งตนเอง
+- ข้อความอ่านได้เฉพาะลูกค้าใน booking, สมาชิกพาร์ทเนอร์นั้น และ staff; รีวิวส่งได้ครั้งเดียวโดยเจ้าของ booking ที่ completed แล้ว
+- ข้อมูลบัญชีจริงไม่ถูกเก็บใน localStorage เบราว์เซอร์เก็บเฉพาะการตั้งค่าค้นหา/สกุลเงินใน `rbc-go-preferences-v2` เมื่อเปิดเว็บจะล้างข้อมูลเดโมเก่าจาก `rbc-go-next-v1` และไม่กู้บัญชี การจอง รายการบันทึก หรือข้อความจำลองกลับมา
+
+## พาร์ทเนอร์และปฏิทิน
+
+ผู้สมัครยืนยัน OTP อีเมลก่อนสร้างบัญชี ยื่นธุรกิจพร้อม PDF/JPG/PNG จริง ผู้ตรวจอนุมัติธุรกิจก่อนเปิดพื้นที่พาร์ทเนอร์ รายการใหม่และรายการที่แก้ไขตามคำขอต้องผ่านการตรวจอีกครั้ง
+
+เอกสารและรูปเก็บเป็น bytes ใน PostgreSQL พร้อมตรวจประเภทและขนาดไฟล์ เอกสารดาวน์โหลดได้เฉพาะเจ้าของและผู้ตรวจ รูปของรายการที่ไม่เผยแพร่หรือพาร์ทเนอร์ถูกระงับไม่เปิดสาธารณะ การสำรอง PostgreSQL จึงครอบคลุมไฟล์เหล่านี้ด้วย
+
+ปิดวันว่างแยกตามยานพาหนะและใช้ transaction lock ร่วมกับการเสนอราคา ไม่ให้ปิดทับ held/confirmed booking ฐานข้อมูลใช้ exclusion constraint ป้องกันการจองทับกัน บันทึก handover ได้เมื่อเริ่มบริการแล้ว และ complete ได้หลังเวลาสิ้นสุดและบันทึก handover แล้ว
+
+## การจองและชำระเงิน
+
+ลูกค้าส่งวันเวลา → พาร์ทเนอร์เสนอราคาค่าเช่าสุทธิ → ระบบรวมเงินประกันและถือเวลา 48 ชั่วโมง → ลูกค้าตรวจราคาและชำระ → ระบบตรวจ charge จาก Omise ก่อน confirmed
+
+ข้อมูลบัตรส่งตรงให้ Omise ผ่าน hosted payment UI เซิร์ฟเวอร์รับเฉพาะ token ตรวจยอด สกุลเงิน ref_id และ test/live mode ก่อนเปลี่ยนสถานะ มี record สำหรับ payment attempt และ webhook event เพื่อกันการทำซ้ำ การชำระที่ผลไม่แน่นอนถูกล็อกไว้ตรวจสอบ ไม่เปิดให้ชำระซ้ำทันที
+
+ตั้ง `APP_BASE_URL`, `OMISE_PUBLIC_KEY`, `OMISE_SECRET_KEY`, `OMISE_WEBHOOK_SECRET` และ test webhook ที่ `https://YOUR_DOMAIN/api/omise/webhook` เว็บตรวจ HMAC จาก raw body และ timestamp แล้วอ่าน charge กลับจาก Omise อีกครั้ง หน้าสถานะ pending ตรวจผ่าน Server Action แบบ POST และ job ตรวจซ้ำได้
+
+ค่าเริ่มต้น `OMISE_MODE=test` และ `ENABLE_LIVE_PAYMENTS=false` การเปลี่ยนเป็น live ต้องตั้งทั้ง mode/flag, ใช้คู่ live keys และ HTTPS origin; ลูกค้าที่ชำระ live ต้องยืนยันอีเมลหรือโทรศัพท์แล้ว ไม่สลับโหมดให้โดยอัตโนมัติ
+
+## คืนเงินและ payout
+
+- ก่อนเริ่มชำระ ลูกค้ายกเลิกคำขอได้ถ้าไม่มี payment attempt ค้าง
+- ชำระแล้วให้ส่งคำขอยกเลิก/คืนเงิน; admin เลือกยอดอนุมัติตามนโยบายธุรกิจ ตรวจไม่ให้เกินยอดที่ยังไม่คืน ก่อนส่ง Refund API จริง
+- เมื่อ completed ลูกค้าขอคืนเงินประกันได้ ยอดคืนประเภท deposit ต้องไม่เกินเงินประกันที่เหลือ
+- ไม่สร้าง payout จนกว่าบริการ completed, คืนเงินประกันครบ และไม่มี refund ค้าง
+- ตั้ง `PLATFORM_COMMISSION_BPS` เป็นอัตราที่ธุรกิจอนุมัติอย่างชัดเจน เช่น 100 = 1%; ไม่มีค่าเริ่มต้นและไม่มีการเลือกอัตราให้ธุรกิจ
+- Admin ลงทะเบียน Omise recipient ID ที่ผ่านการตรวจและเปิด active ในโหมดเดียวกับ keys เท่านั้น บัญชี Omise ต้องได้รับสิทธิ์จ่าย third-party recipients ตามเงื่อนไขของผู้ให้บริการ
+- Payout กันการส่งซ้ำต่อ booking บันทึกสถานะจาก provider พร้อมค่าธรรมเนียมและยอดรับสุทธิ จะไม่แสดง paid จากการส่งคำขอสำเร็จเพียงอย่างเดียว
+- กรณี network timeout ต้องใช้เลขรายการจาก Omise ตรวจเทียบใน workspace ก่อน retry ไม่ถือว่าการ timeout หมายถึงผู้ให้บริการยังไม่ได้ทำรายการ
+- การคืนเงินหลังเริ่ม payout ถูกล็อกไว้เพื่อให้ทีมงานตรวจ settlement; ยังไม่มีการหักเงินคืนจากบัญชีพาร์ทเนอร์โดยอัตโนมัติ
+
+คู่มือ API ที่ใช้: [Refunds](https://docs.omise.co/refunds-api), [Transfers](https://docs.omise.co/transfers-api), [Recipients](https://docs.omise.co/recipients-api), [Webhooks](https://docs.omise.co/api-webhooks)
+
+## อีเมล การแจ้งเตือน และ jobs
+
+เลือกผู้ส่งได้ 2 แบบ โดยใช้ adapter เดียวกันสำหรับ OTP ลูกค้า/พาร์ทเนอร์ ลิงก์ยืนยันอีเมล/กู้รหัสผ่าน และการแจ้งเตือน:
+
+- Gmail: ตั้ง `EMAIL_PROVIDER=gmail`, `GMAIL_USER` และ `GMAIL_APP_PASSWORD` ใน `.env.local` หรือ secret store ของ deployment บัญชีต้องเปิดการยืนยันสองขั้นตอนและรองรับ [App Password](https://support.google.com/mail/answer/185833?hl=th) ใช้ App Password 16 ตัวอักษร ไม่ใช้รหัสผ่าน Google ปกติ และห้ามส่งค่า secret ในแชต/commit ลง Git
+- `EMAIL_FROM` เว้นว่างได้เมื่อใช้ Gmail ระบบใช้ `RBC GO <GMAIL_USER>` หากกำหนดเอง ที่อยู่ต้องตรงกับ `GMAIL_USER` การส่งใช้ TLS ที่ `smtp.gmail.com:465` ไม่ต้องซื้อโดเมนผู้ส่ง
+- Gmail มี [ขีดจำกัดการส่ง](https://support.google.com/mail/answer/22839?hl=th) และอาจถูกระงับการส่งชั่วคราวเมื่อถึงโควตา จึงต้องติดตามปริมาณ OTP และการแจ้งเตือนรวมกัน
+- Resend: ตั้ง `EMAIL_PROVIDER=resend`, `RESEND_API_KEY` และ `EMAIL_FROM` จากโดเมนที่ยืนยันแล้ว ยังรองรับ configuration เดิมที่ไม่ได้ระบุ `EMAIL_PROVIDER`
+
+ตั้ง `PARTNER_OTP_SECRET` สุ่มอย่างน้อย 32 ตัวอักษร เป็น HMAC secret ของ OTP ทั้งลูกค้าและพาร์ทเนอร์ (แยก purpose ในข้อมูลที่ hash) OTP ส่งตรงผ่านผู้ส่งที่เลือก ส่วนแจ้งเตือนการจอง ราคา ข้อความ refund และ payout เข้าคิว `rbc_go.email_outbox` ใน transaction เดียวกับข้อมูลธุรกิจ
+
+ตั้ง `APP_BASE_URL` ให้เป็น HTTPS origin ของเว็บจริงก่อนส่งลิงก์กู้รหัสผ่านให้ลูกค้านอกเครื่อง และรัน migration 012 ก่อนเปิด OTP ลูกค้า ตรวจการตั้งค่าด้วย `npm run setup:check` แล้วทดสอบรับ OTP/กู้รหัสผ่านจริงก่อนนับว่าพร้อมใช้งาน
+
+คำขอจากหน้าจอเรียกส่งคิวหลังตอบกลับ และ worker ส่งซ้ำเมื่อบริการขัดข้อง มีการล็อกคิวและ backoff หยุดหลัง 8 attempts เพื่อตรวจแก้การตั้งค่าก่อนส่งใหม่ Resend ใช้ idempotency key ส่วน Gmail SMTP ใช้ Message-ID เดิมเมื่อ retry แต่ SMTP ไม่รับประกัน deduplication หากผู้ส่งยอมรับอีเมลแล้วการตอบกลับสูญหาย ผู้รับอาจได้รับซ้ำ
+
+ตั้ง `JOBS_SECRET` สุ่มอย่างน้อย 32 ตัวอักษร แล้วรัน:
+
+```sh
+JOBS_BASE_URL=http://localhost:3000 npm run jobs
 ```
 
-คำแปลไทยอยู่ใน `src/lib/translations/th/`: `home.json`, `search.json`, `vehicle.json`, `booking.json`, `account.json`, `partner.json`, `operations.json`, `experiences.json`, `guide.json` และ `catalog.json` สำหรับชื่อสถานที่/ยานพาหนะ คำที่ใช้หลายหน้ารวมใน `shared.json` ส่วน `legacy.json` เก็บข้อความจากต้นแบบเดิมที่ยังไม่มีจุดเรียกใช้งานชัดเจน เวลาเพิ่มคำใหม่ให้เลือกไฟล์ของหน้าที่ใช้ก่อน; ถ้าใช้หลายหน้าให้ใส่ `shared.json` โค้ดยังเรียกผ่าน `t("English text")` ตามเดิม
+Worker เรียก POST `/api/jobs/email` และ `/api/jobs/payments` ทุกประมาณ 1 นาที ด้วย Bearer secret; endpoints ปฏิเสธคำขอที่ไม่มี secret ที่ถูกต้อง Docker compose เปิด worker นี้ให้อัตโนมัติ
 
-## หน้าและเส้นทาง
+ไม่ต้องตั้ง Twilio สำหรับ OTP อีเมล หน้าล็อกอินไม่เรียกบริการ SMS แล้ว adapter โทรศัพท์เดิมเก็บไว้เพื่อ compatibility และการทดสอบ ตั้ง `SUPPORT_EMAIL` หากต้องการแสดงช่องทางอีเมลจริงในหน้าช่วยเหลือ
 
-บรีฟต้นฉบับไม่ได้กำหนดจำนวนหน้าตายตัว โปรเจกต์นี้จัดเป็นกลุ่มหน้าตามตารางด้านล่าง และมีหน้าย่อยตามหมวด ยานพาหนะ บทบาท และขั้นตอน ไม่ได้นับไทย/อังกฤษหรือเดสก์ท็อป/มือถือเป็นคนละหน้า
+## Deployment
 
-| กลุ่ม | ตัวอย่างเส้นทางหลัง `/th` หรือ `/en` |
-|---|---|
-| หน้าแรก | `/` |
-| ค้นหา | `/search/boats`, `/search/motorcycles`, `/search/cars`, `/search/jets` |
-| ยานพาหนะ | `/vehicle/mercedes`, `/vehicle/azimut` |
-| ชำระเงิน | `/checkout/mercedes` |
-| ผลการจอง | `/confirmation` |
-| บัญชีลูกค้า | `/account/bookings`, `saved`, `payments`, `messages`, `profile` |
-| สมัครพาร์ตเนอร์ | `/apply` |
-| สร้างรายการ 8 ขั้นตอน | `/wizard/0` ถึง `/wizard/7` |
-| พาร์ตเนอร์ | `/partner/overview`, `listings`, `availability`, `requests`, `bookings`, `earnings`, `profile` |
-| ทีมปฏิบัติการ | `/operations/overview`, `partners`, `listings`, `requests`, `bookings`, `fleet`, `payments`, `activity` |
-| รวมประสบการณ์ | `/experiences` |
-| รายละเอียดประสบการณ์ | `/experience/andaman`, `/experience/coast` |
-| ช่วยเหลือ | `/help` |
-| คู่มือการออกแบบ | `/guide` |
+มี `Dockerfile`, `compose.production.yml`, `deploy/Caddyfile` และ `deploy/production.env.example` สำหรับ Node standalone + PostgreSQL + HTTPS reverse proxy + jobs
 
-## Login / Register ของลูกค้า
+1. คัดลอก `deploy/production.env.example` เป็น `.env.production` และใส่ค่าจริง ค่ารหัสผ่าน PostgreSQL ใน compose ควรเป็น hex ที่สุ่มใหม่เพื่อใช้ใน URL ได้โดยไม่ต้อง escape
+2. ตั้ง DNS ของ `APP_DOMAIN` มาที่โฮสต์ และเปิดพอร์ต 80/443
+3. ตรวจ secrets, Google callback, ผู้ส่งอีเมล, recipient และนโยบาย commission ให้ครบ
+4. รัน:
 
-Navbar มีปุ่มเข้าสู่ระบบและสมัครสมาชิก บนมือถือเปิดได้จากเมนูหรือปุ่มบัญชีด้านล่าง หน้าต่างรองรับเบอร์โทรพร้อมรหัสประเทศ และตัวเลือก Google / Facebook
+```sh
+docker compose --env-file .env.production -f compose.production.yml up --build -d
+```
 
-- เบอร์โทร: กรอกชื่อเมื่อสมัครสมาชิก → กรอกเบอร์มือถือ → OTP ทดสอบ `123456` → เข้าสู่บัญชีสาธิต
-- ตรวจรูปแบบเบอร์ไทย/ต่างประเทศ, รหัสผิด, รหัสหมดอายุ 5 นาที และเว้นระยะส่งรหัสใหม่ 30 วินาที
-- Google / Facebook: เปิดหน้าทดลองบัญชีสาธิต โดยไม่มีการเชื่อมบัญชีหรือส่งข้อมูลให้ผู้ให้บริการจริง
-- เมื่อเข้าสู่บัญชี ปุ่ม Navbar เปลี่ยนเป็น “บัญชีของฉัน” สถานะเดโมคงอยู่เมื่อรีเฟรช และออกจากระบบได้ในโปรไฟล์
-- ยังไม่มี OAuth, SMS, server session หรือการบังคับสิทธิ์จริง รหัส OTP ทดสอบไม่ถูกเก็บใน localStorage; มีเพียงโปรไฟล์สาธิตใน state ของแอป
+Compose ติดตั้ง migration ก่อนเปิดเว็บ ไม่มีการเปิดพอร์ต PostgreSQL ออกสาธารณะ Caddy ขอ TLS certificate ให้โดเมนจริง; ข้อมูลฐานและ TLS อยู่ใน persistent volumes การรันซ้ำหรือ rollback ต้องคง volumes ไว้
 
-คอมโพเนนต์อยู่ใน `src/components/customer/auth/` และกฎตรวจข้อมูลอยู่ใน `src/lib/customer-auth.ts` การเปิดใช้จริงต้องเชื่อมบริการยืนยันตัวตน พร้อม Google/Facebook OAuth และ SMS provider ที่เลือก
+CI ใน `.github/workflows/verify.yml` ตรวจ lint, typecheck, build และ integration กับ PostgreSQL แยก ไม่มี auto-deploy production
 
-## ทดลองเส้นทางหลัก
+เปิด indexing ด้วย `ENABLE_PUBLIC_INDEXING=true` หลังตรวจโดเมน ข้อมูลจริง และนโยบายธุรกิจแล้ว คำอธิบายใน `/help` ระบุพฤติกรรมซอฟต์แวร์ปัจจุบัน ไม่ใช่เอกสารข้อกำหนด/นโยบายทางกฎหมายฉบับที่ธุรกิจอนุมัติ
 
-ลูกค้าจองยานพาหนะทุกหมวดได้ทันทีจากราคาตัวอย่างที่แสดง ไม่ต้องขอหรือรอใบเสนอราคา เส้นทาง `/request/:id` เดิมจะไปหน้า checkout และ `/quote` เดิมจะไปหน้าการจอง
+**ข้อจำกัดการตรวจ:** compose config ผ่านการตรวจ แต่ Docker daemon ในเครื่องนี้เริ่มไม่สำเร็จ จึงยังไม่ได้ build/run image จริงหรือทดสอบ TLS บนโดเมนสาธารณะ ต้องตรวจสองส่วนนี้บนโฮสต์ก่อน release
 
-1. เลือกยานพาหนะและวันที่ → ตรวจสอบความพร้อม → ดำเนินการต่อ
-2. **ข้อมูลการจอง:** ตรวจวันเดินทางและกรอกชื่อ อีเมล เบอร์โทร → ดำเนินการต่อ
-3. **เพิ่มแพ็กเกจ:** เลือกบริการเสริมตามหมวด หรือข้ามได้ ยอดรวมอัปเดตพร้อมภาษีทันที
-4. **ชำระเงิน:** เลือกบัตรเครดิต/เดบิต หรือ PromptPay → ยอมรับเงื่อนไข → เปิดหน้าระบบชำระเงินจำลอง
-5. บัตรทดสอบ: กด “ใช้บัตรทดสอบ” หรือกรอก `4242 4242 4242 4242`, วันหมดอายุในอนาคต และรหัส 3 หลัก → ชำระ → ยืนยันการจอง พร้อมแพ็กเกจและช่องทางชำระเงิน
-6. ทดสอบไม่สำเร็จด้วยบัตร `4000 0000 0000 0002` แล้วลองใหม่ ข้อมูลผู้เดินทางและแพ็กเกจยังอยู่
-7. PromptPay แสดง QR สาธิตที่รับเงินไม่ได้ ใช้ปุ่มจำลองการชำระเพื่อทดสอบผลสำเร็จ/ไม่สำเร็จ
+## สำรองและกู้ข้อมูล
 
-ข้อมูลบัตรทดสอบอยู่เฉพาะ state ภายในหน้าต่างชำระเงิน ไม่บันทึกใน localStorage และไม่ส่งออกไปยังเซิร์ฟเวอร์ ไม่มีการเรียกเก็บเงินจริง
+ติดตั้ง PostgreSQL client ที่รองรับเวอร์ชันเซิร์ฟเวอร์ แล้วตั้งปลายทางไฟล์สำรอง:
 
-พาร์ตเนอร์ยังสมัครและสร้างรายการได้ 8 ขั้นตอน ทีมงานอนุมัติพาร์ตเนอร์และรายการได้ตามเดิม การยกเลิกและคืนเงินยังเป็นเดโมผ่าน Account → Operations/Payments
+```sh
+RBC_GO_BACKUP_DIR=/path/to/private/backups npm run db:backup
+```
 
-## ขอบเขตของเวอร์ชันนี้
+สคริปต์ใช้ `pg_dump` custom format ไม่ส่งรหัสผ่านผ่าน command line ไฟล์เป็น mode 600 ไดเรกทอรีใหม่เป็น 700 ต้องส่งสำเนาออกไปยังพื้นที่สำรองที่เข้ารหัสแยกจากโฮสต์ และกำหนดรอบสำรอง/อายุจัดเก็บตามธุรกิจ
 
-นี่คือ **frontend demo ที่รันด้วย Next.js** พร้อม state ที่เชื่อมโยงหน้าต่าง ๆ ยังไม่ได้เชื่อมระบบธุรกิจจริง:
+ตรวจไฟล์ด้วย `pg_restore --list FILE.dump` และทดลองกู้ลงฐานแยกก่อน restore ฐานจริง ห้ามใช้ `--clean` กับฐานใช้งานโดยไม่มีแผนและการยืนยันจากผู้ดูแล ในรอบนี้ทดสอบ dump และ restore ข้อมูลทดสอบลงฐานชั่วคราวสำเร็จ แล้วลบฐานชั่วคราวที่สร้างเอง
 
-- ข้อมูลอยู่ใน localStorage คีย์ `rbc-go-next-v1` ของเบราว์เซอร์ ไม่มีฐานข้อมูลหรือการแชร์ข้ามอุปกรณ์
-- บทบาท Customer / Partner / Operations เป็นการจำลอง UI ยังไม่มีระบบลงชื่อเข้าใช้หรือการบังคับสิทธิ์ที่เซิร์ฟเวอร์
-- เก็บเฉพาะชื่อไฟล์ที่เลือก ไม่มีการอัปโหลดไฟล์จริง คำขอและข้อความไม่ถูกส่งให้บุคคลภายนอก
-- ปฏิทินพาร์ตเนอร์ใช้ชุดวันที่ปิดรับจองร่วมกันในเดโม รายการใหม่ที่อนุมัติยังไม่ถูกเผยแพร่เป็น inventory จริง
-- การชำระเงิน คืนเงิน และ payout เป็น simulation ไม่มีการเก็บข้อมูลบัตรและไม่มีธุรกรรมจริง
-- ราคา ภาษี ค่าคอมมิชชัน รีวิว และภาพประกอบเป็นตัวอย่าง ไม่ใช่ข้อเสนอธุรกิจจริง
-- USD ใช้อัตราตัวอย่าง 35 บาท/ดอลลาร์ เพื่อการแสดงผล ฐานราคาคิดเป็น THB
+## สิ่งที่ยังต้องตั้งค่าจากเจ้าของบริการ
 
-ก่อนเปิดรับลูกค้าจริง ต้องเชื่อมฐานข้อมูล inventory, authentication และสิทธิ์แต่ละบทบาท, บริการไฟล์, payment gateway/webhook/idempotency ฝั่งเซิร์ฟเวอร์, ระบบแจ้งเตือน และกำหนดนโยบายธุรกิจจริง
+- Gmail ผู้ส่งและ App Password หรือ Resend API key กับอีเมลผู้ส่งจากโดเมนที่ยืนยันแล้ว ไม่ต้องตั้ง Twilio สำหรับการยืนยันด้วยอีเมล
+- อัตราคอมมิชชัน นโยบายคืนเงิน/เงินประกัน เอกสารธุรกิจ และบัญชีผู้รับเงินพาร์ทเนอร์ที่ตรวจสอบแล้ว
+- โฮสต์/โดเมน/HTTPS และการตั้งค่าบริการให้ตรง production รวมถึง Google Audience/Publishing และ webhook delivery จริง
+- การยืนยันตรวจ Docker image และ backup schedule บนโฮสต์จริง
 
-## เอกสารอ้างอิง
+รายละเอียดหลักฐานการตรวจอยู่ใน [QA.md](QA.md)
 
-- [Next.js installation](https://nextjs.org/docs/app/getting-started/installation)
-- [Tailwind CSS with Next.js](https://tailwindcss.com/docs/installation/framework-guides/nextjs)
-- [shadcn/ui](https://ui.shadcn.com/docs)
+
+## เริ่มต้นด้วยข้อมูลจริง
+
+แอปไม่มี seed รถ/พาร์ทเนอร์/การจองสำหรับ production และไม่ใช้ inventory ตัวอย่างเมื่อฐานข้อมูลว่าง หน้าแรกและค้นหาแสดงสถานะว่างจนกว่าจะเพิ่มและอนุมัติรายการจริง โครงสร้างหมวดหมู่และภาพประกอบเว็บไซต์ยังคงอยู่
+
+ข้อมูลรถตัวอย่างที่ใช้ตรวจการคำนวณถูกย้ายไป `tests/fixtures` ซึ่งแอปไม่ import; migrations สร้าง schema โดยไม่เพิ่มข้อมูลธุรกิจจำลอง ข้อมูลและฟีเจอร์ Omise รับชำระ คืนเงิน และ payout ยังคงอยู่ ใช้โหมด test ต่อได้ก่อนตั้งค่ารับเงินจริง

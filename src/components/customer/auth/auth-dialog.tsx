@@ -1,14 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
-import {
-  ArrowLeft,
-  ArrowRight,
-  ArrowUpRight,
-  Smartphone,
-  UserRound,
-} from "lucide-react";
+import { ArrowLeft, ArrowUpRight, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -20,9 +14,12 @@ import {
 import { FieldGroup } from "@/components/ui/field";
 import { Separator } from "@/components/ui/separator";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { ChoiceField, TextField } from "@/components/rbc/common";
+import { TextField } from "@/components/rbc/common";
 import { useRBC } from "@/components/rbc/provider";
-import { normalizeCustomerPhone, type DemoCustomer } from "@/lib/customer-auth";
+import {
+  startEmailSignIn,
+  finishEmailSignIn,
+} from "@/lib/server/email-signin-actions";
 import type { AuthMode } from "./provider";
 import { OtpForm } from "./otp-form";
 import { SocialButtons, SocialIcon } from "./social-buttons";
@@ -30,30 +27,30 @@ import { SocialButtons, SocialIcon } from "./social-buttons";
 export default function CustomerAuthDialog({
   initialMode,
   onClose,
-  onComplete,
+  googleEnabled,
+  emailOtpEnabled,
+  onEmailComplete,
 }: {
   initialMode: AuthMode;
   onClose: () => void;
-  onComplete: (profile: Omit<DemoCustomer, "kind" | "id">) => void;
+  googleEnabled: boolean;
+  emailOtpEnabled: boolean;
+  onEmailComplete: () => void;
 }) {
-  const { state, t, href } = useRBC();
+  const { state, t, href, locale } = useRBC();
+  const [pending, start] = useTransition();
   const [mode, setMode] = useState(initialMode);
-  const [country, setCountry] = useState("+66");
-  const [phone, setPhone] = useState(state.traveler.phone);
+  const [email, setEmail] = useState(state.traveler.email);
   const [name, setName] = useState(state.traveler.name);
   const [error, setError] = useState("");
   const [invalid, setInvalid] = useState(false);
-  const [challenge, setChallenge] = useState<{
-    phone: string;
-    expiresAt: number;
-  } | null>(null);
-  const [social, setSocial] = useState<"google" | "facebook" | null>(null);
+  const [challenge, setChallenge] = useState<string | null>(null);
+  const [social, setSocial] = useState(false);
   const registering = mode === "register";
-  const providerName = social === "google" ? "Google" : "Facebook";
   const title = social
-    ? "Try social sign-in"
+    ? "Social sign-in unavailable"
     : challenge
-      ? "Verify your phone number"
+      ? "Verify your email"
       : registering
         ? "Create your account"
         : "Welcome back";
@@ -77,7 +74,7 @@ export default function CustomerAuthDialog({
           <DialogDescription>
             {t(
               challenge
-                ? "Enter the 6-digit code to continue."
+                ? "Enter the 6-digit code sent to your email. It expires in 10 minutes."
                 : "Your next journey starts here. Keep your bookings and favorites in one place.",
             )}
           </DialogDescription>
@@ -85,60 +82,34 @@ export default function CustomerAuthDialog({
         {social ? (
           <div className="flex flex-col gap-5">
             <div className="flex items-center gap-3 rounded-xl border p-4">
-              <SocialIcon provider={social} />
-              <p className="font-semibold">{providerName}</p>
+              <SocialIcon />
+              <p className="font-semibold">Google</p>
             </div>
             <p className="text-sm leading-7 text-muted-foreground">
-              {t(
-                "This provider is not connected yet. Try a demo customer account to preview the experience.",
-              )}
+              {t("Google sign-in is not configured yet.")}
             </p>
-            <div className="flex items-center gap-3 rounded-xl bg-secondary p-4">
-              <span className="flex size-10 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                <UserRound className="size-5" />
-              </span>
-              <div>
-                <p className="font-semibold">{t("Demo traveler")}</p>
-                <p className="text-xs text-muted-foreground">
-                  traveler@example.com
-                </p>
-              </div>
-            </div>
             <Button
-              size="lg"
-              onClick={() =>
-                onComplete({
-                  method: social,
-                  name: t("Demo traveler"),
-                  email: "traveler@example.com",
-                  phone: "",
-                })
-              }
+              type="button"
+              variant="ghost"
+              onClick={() => setSocial(false)}
             >
-              {t("Continue with demo account")}
-              <ArrowRight data-icon="inline-end" />
-            </Button>
-            <Button variant="ghost" onClick={() => setSocial(null)}>
               <ArrowLeft data-icon="inline-start" />
               {t("Back")}
             </Button>
           </div>
         ) : challenge ? (
           <OtpForm
-            phone={challenge.phone}
-            expiresAt={challenge.expiresAt}
+            email={challenge}
+            verify={async (code) => {
+              const result = await finishEmailSignIn(code, locale);
+              if (!result.error) onEmailComplete();
+              return result.error;
+            }}
+            resend={async () => (await startEmailSignIn(name, challenge)).error}
             onBack={() => {
               setChallenge(null);
               setError("");
             }}
-            onVerified={() =>
-              onComplete({
-                method: "phone",
-                phone: challenge.phone,
-                name: name.trim() || state.traveler.name || t("Demo traveler"),
-                email: state.traveler.email,
-              })
-            }
           />
         ) : (
           <>
@@ -167,71 +138,73 @@ export default function CustomerAuthDialog({
                 event.preventDefault();
                 setInvalid(true);
                 if (registering && !name.trim()) return;
-                const normalized = normalizeCustomerPhone(country, phone);
-                if (!normalized) {
-                  setError("Please enter a valid mobile number.");
+                if (
+                  !/^[^\s@<>,;]+@[^\s@<>,;]+\.[^\s@<>,;]+$/.test(email.trim())
+                ) {
+                  setError("Please enter a valid email address.");
                   return;
                 }
                 setError("");
-                setChallenge({
-                  phone: normalized,
-                  expiresAt: Date.now() + 300000,
+                start(async () => {
+                  const result = await startEmailSignIn(name, email);
+                  if (result.error) setError(result.error);
+                  else setChallenge(result.email);
                 });
               }}
             >
               <FieldGroup>
                 {registering && (
-                  <>
-                    <TextField
-                      label="Full name"
-                      autoComplete="name"
-                      value={name}
-                      onChange={(event) => setName(event.target.value)}
-                      required
-                      error={
-                        invalid && !name.trim()
-                          ? t("Please complete the required fields.")
-                          : undefined
-                      }
-                    />
-                  </>
-                )}
-                <div className="grid grid-cols-[112px_minmax(0,1fr)] items-start gap-3">
-                  <ChoiceField
-                    label="Country code"
-                    value={country}
-                    onChange={(value) => {
-                      setCountry(value);
-                      setError("");
-                    }}
-                    options={[
-                      { value: "+66", label: "🇹🇭 +66" },
-                      { value: "+65", label: "🇸🇬 +65" },
-                      { value: "+1", label: "🇺🇸 +1" },
-                      { value: "+44", label: "🇬🇧 +44" },
-                    ]}
-                  />
                   <TextField
-                    label="Phone number"
-                    type="tel"
-                    autoComplete="tel-national"
-                    inputMode="tel"
-                    placeholder="081 234 5678"
-                    value={phone}
-                    onChange={(event) => {
-                      setPhone(event.target.value);
-                      setError("");
-                    }}
+                    label="Full name"
+                    autoComplete="name"
+                    maxLength={120}
+                    value={name}
+                    onChange={(event) => setName(event.target.value)}
                     required
-                    error={error ? t(error) : undefined}
+                    error={
+                      invalid && !name.trim()
+                        ? t("Please complete the required fields.")
+                        : undefined
+                    }
                   />
-                </div>
-                <Button type="submit" size="lg" className="w-full">
-                  <Smartphone data-icon="inline-start" />
-                  {t("Continue with phone number")}
+                )}
+                <TextField
+                  label="Email address"
+                  type="email"
+                  autoComplete="email"
+                  inputMode="email"
+                  maxLength={254}
+                  value={email}
+                  onChange={(event) => {
+                    setEmail(event.target.value);
+                    setError("");
+                  }}
+                  required
+                  error={error ? t(error) : undefined}
+                />
+                {!emailOtpEnabled && (
+                  <p className="text-sm text-muted-foreground">
+                    {t(
+                      "Email sign-in is temporarily unavailable. Please try again later.",
+                    )}
+                  </p>
+                )}
+                <Button
+                  type="submit"
+                  size="lg"
+                  className="w-full"
+                  disabled={pending || !emailOtpEnabled}
+                >
+                  <Mail data-icon="inline-start" />
+                  {t("Send email code")}
                 </Button>
               </FieldGroup>
             </form>
+            <Button variant="outline" size="lg" asChild>
+              <Link href={href(`email?mode=${mode}`)} onClick={onClose}>
+                {t("Use email and password")}
+              </Link>
+            </Button>
             <div className="flex items-center gap-4">
               <Separator className="flex-1" />
               <span className="shrink-0 text-xs text-muted-foreground">
@@ -239,7 +212,14 @@ export default function CustomerAuthDialog({
               </span>
               <Separator className="flex-1" />
             </div>
-            <SocialButtons onSelect={setSocial} />
+            <SocialButtons
+              href={
+                googleEnabled
+                  ? `/api/auth/google/start?locale=${locale}`
+                  : undefined
+              }
+              onSelect={() => setSocial(true)}
+            />
             <p className="text-center text-sm text-muted-foreground">
               {t(registering ? "Already have an account?" : "New to RBC GO?")}{" "}
               <button
@@ -257,14 +237,14 @@ export default function CustomerAuthDialog({
           </>
         )}
         <div className="border-t pt-4 text-center text-[11px] leading-6 text-muted-foreground">
-          <p>{t("Demo only. Google, Facebook and SMS are not connected.")}</p>
+          <p>{t("Your sign-in is verified securely on the server.")}</p>
           <div className="flex justify-center gap-3">
             <Link
               className="underline underline-offset-2"
               href={href("help")}
               onClick={onClose}
             >
-              {t("Terms of use")}
+              {t("Booking help")}
             </Link>
             <span>·</span>
             <Link
@@ -272,7 +252,7 @@ export default function CustomerAuthDialog({
               href={href("help")}
               onClick={onClose}
             >
-              {t("Privacy policy")}
+              {t("Data and privacy")}
             </Link>
           </div>
         </div>

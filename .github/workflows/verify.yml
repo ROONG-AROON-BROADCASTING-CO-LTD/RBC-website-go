@@ -1,0 +1,35 @@
+name: Verify
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: rbc_go
+          POSTGRES_PASSWORD: test-only-password
+          POSTGRES_DB: rbc_go_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U rbc_go -d rbc_go_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      RBC_GO_TEST_DATABASE_URL: postgresql://rbc_go:test-only-password@localhost:5432/rbc_go_test
+      APP_BASE_URL: http://localhost:3101
+      OMISE_PUBLIC_KEY: pkey_test_ci
+      OMISE_SECRET_KEY: skey_test_ci
+      ENABLE_DEMO: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test:integration

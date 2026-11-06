@@ -8,9 +8,10 @@ import { Button } from "@/components/ui/button";
 import { useRBC } from "@/components/rbc/provider";
 import { Panel } from "@/components/rbc/common";
 import { TravelerFields, travelerErrors } from "@/components/rbc/booking";
+import { saveCustomerProfile } from "@/lib/server/customer-actions";
 
 export function CustomerProfile() {
-  const { state, setState, t } = useRBC();
+  const { state, t } = useRBC();
   const { customer, openAuth, signOut } = useCustomerAuth();
   const [invalid, setInvalid] = useState(false);
   return (
@@ -27,15 +28,18 @@ export function CustomerProfile() {
                 <p className="mt-1 break-all text-sm text-muted-foreground">
                   {customer.method === "phone"
                     ? customer.phone
-                    : customer.email}
+                    : customer.email ||
+                      (customer.method === "google" ? "Google" : t("Account"))}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {t("Demo account")} · {t("Signed in with")}{" "}
+                  {t("Signed in with")}{" "}
                   {customer.method === "phone"
                     ? t("Phone number")
                     : customer.method === "google"
                       ? "Google"
-                      : "Facebook"}
+                      : customer.method === "email"
+                        ? t("Email")
+                        : t("Account")}
                 </p>
               </div>
             </div>
@@ -61,16 +65,25 @@ export function CustomerProfile() {
       <Panel title="Traveler information">
         <form
           noValidate
-          onSubmit={(e) => {
+          onSubmit={async (e) => {
             e.preventDefault();
             setInvalid(true);
             if (!Object.values(travelerErrors(state.traveler)).some(Boolean)) {
-              if (customer)
-                setState((current) => ({
-                  ...current,
-                  customer: { ...customer, ...current.traveler },
-                }));
-              toast.success(t("Saved locally"));
+              if (customer?.kind === "account") {
+                try {
+                  const result = await saveCustomerProfile(state.traveler);
+                  if (result.error) {
+                    toast.error(t("Please try again."));
+                    return;
+                  }
+                  toast.success(t("Profile saved"));
+                  return;
+                } catch {
+                  toast.error(t("Please try again."));
+                  return;
+                }
+              }
+              openAuth("login");
             }
           }}
         >

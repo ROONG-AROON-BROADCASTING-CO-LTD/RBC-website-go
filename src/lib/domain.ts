@@ -1,12 +1,31 @@
-import inventory from "./inventory.json";
+import categoryDefinitions from "./categories.json";
 import { selectedPackages } from "./booking-packages";
-import type { DemoCustomer } from "./customer-auth";
 
 export type Locale = "th" | "en" | "zh";
 export type Category = "boats" | "motorcycles" | "cars" | "jets";
-export type Vehicle = (typeof inventory.vehicles)[number];
-export const vehicles = inventory.vehicles;
-export const categories = inventory.categories;
+export type Vehicle = {
+  id: string;
+  cat: Category;
+  name: string;
+  location: string;
+  place: string;
+  price: number;
+  unit: string;
+  mode: "instant" | "quote";
+  capacity: number;
+  spec: string;
+  provider: string;
+  rating: number;
+  reviews: number;
+  img: string;
+  type: string;
+  service: string;
+  amenities: string[];
+  deposit: number;
+};
+// Legacy helpers have no local inventory. Public listings come from PostgreSQL.
+export const vehicles: Vehicle[] = [];
+export const categories = categoryDefinitions;
 export const vehicleById = (id?: string) => vehicles.find((v) => v.id === id);
 export function searchCategoryForPath(
   pathname: string,
@@ -75,7 +94,6 @@ export type Listing = {
   feedback?: string;
 };
 export type AppState = {
-  customer?: DemoCustomer | null;
   search: Search;
   traveler: Traveler;
   saved: string[];
@@ -102,11 +120,11 @@ export const initialSearch: Search = {
   category: "boats",
   location: "Phuket",
   destination: "Phuket (HKT)",
-  date: "2026-11-15",
-  returnDate: "2026-11-16",
+  date: "",
+  returnDate: "",
   time: "09:00",
   returnTime: "09:00",
-  guests: 4,
+  guests: 1,
   duration: "Full day",
   drive: "Self-drive",
   flight: "One-way",
@@ -125,7 +143,7 @@ export const initialState: AppState = {
     documents: [],
     status: "Not submitted",
     listing: null,
-    blocked: ["2026-11-18", "2026-11-19"],
+    blocked: [],
   },
   messages: [],
   activity: [],
@@ -244,11 +262,12 @@ export const operationsNav = [
   "activity",
 ];
 export const accountNav = [
+  "profile",
   "bookings",
+  "reviews",
   "saved",
   "payments",
   "messages",
-  "profile",
 ];
 export const wizardSteps = [
   "Category",
@@ -274,8 +293,6 @@ export function validRoute(parts: string[]) {
   if (route === "experience") return ["andaman", "coast"].includes(id);
   return (
     !id &&
-    ["quote", "confirmation", "apply", "experiences", "help", "guide"].includes(
-      route,
-    )
+    ["quote", "confirmation", "experiences", "help", "guide"].includes(route)
   );
 }
